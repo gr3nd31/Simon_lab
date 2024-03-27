@@ -1,0 +1,6 @@
+Name,Data_Type,Description
+Infection,character,Descriptive name of the same group
+Replicate,Integer,Technical replicate number
+T_date,Timedate,Date the seedlings were transplanted
+I_date,Timedate,Date the seedlings were agro infiltrated
+S_date,Timedate,Date symptoms were first observed
