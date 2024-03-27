@@ -151,7 +151,7 @@ stack_o_late <- function(file_name="reads_df.csv",
                          split_strand = F,
                          set_line=0,
                          save_it = T,
-                         save_tag = "",
+                         prefix = "",
                          alph = 0.2){
   datum <- read_csv(file_name)
   datum$aligned_length <- 0
@@ -184,7 +184,7 @@ stack_o_late <- function(file_name="reads_df.csv",
   }
   print(draft)
   if (save_it){
-    ggsave(paste0(save_tag, "_stacks.png"), width = 8, height = 4, dpi = 500)
+    ggsave(paste0(prefix, "stacks.png"), width = 8, height = 4, dpi = 500)
   }
 }
 
