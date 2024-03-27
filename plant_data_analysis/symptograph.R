@@ -3,6 +3,8 @@ library(ggpubr)
 
 symptograph <- function(file_name = "test.csv",
                        end_date = T,
+                       graph_set = c(),
+                       age_range = c(),
                        format = "png"){
   datum <- read_csv(file_name)
   datum$T_date <- as.Date(datum$T_date, "%m/%d/%y")
@@ -19,13 +21,15 @@ symptograph <- function(file_name = "test.csv",
   datum$dus <- as.Date(final_date) - datum$S_date
   datum[is.na(datum$S_date),]$dus <- max(datum$age)+10
   
-  for (i in c(0:as.numeric(max(datum$age)))){
+  min_age <- as.numeric(min(datum$age_infiltrated))
+  max_age <- as.numeric(max(datum$dpi))
+  
+  for (i in c(0:max_age)){
     #print(paste0("Day: ", i))
     for (j in unique(datum$Infection)){
       interim <- datum[datum$Infection ==j,]
       sym_count <- nrow(interim[interim$S_date <= min(interim$I_date)+i & !is.na(interim$S_date),])
       sym_percent <- 100*sym_count/nrow(interim)
-      #print(paste0(j, ": ", round(sym_percent, 2), "%"))
       interim_times <- tibble("Day" = i,
                               "Final_age" = unique(interim$age),
                               "Infiltration_age" = unique(interim$age_infiltrated),
@@ -40,8 +44,22 @@ symptograph <- function(file_name = "test.csv",
       }
     }
   }
-  trick <<- all_times
   write_csv(all_times, paste0("timed_", file_name))
+  
+  if (length(graph_set)> 0){
+    for (i in graph_set){
+      if (i %in% unique(all_times$Sample)){
+        tricki <- all_times[all_times$Sample ==i,]
+        if (!exists("trick")){
+          trick <- tricki
+        } else {
+          trick <- rbind(trick, tricki)
+        }
+      }
+    }
+  } else {
+    trick <- all_times
+  }
   draft <- ggplot(data = trick, aes(x = Day,
                                         y = Percent,
                                         color = Sample))+
@@ -61,6 +79,9 @@ symptograph <- function(file_name = "test.csv",
                                       linewidth = 2),
           legend.text = element_text(size = 14),
           legend.title = element_blank())
+  if (length(age_range) == 2){
+    draft <- draft+xlim(age_range[1], age_range[2])
+  }
   print(draft)
   ggsave(paste0("timed_", str_replace(file_name, "csv", format)), width = 6, height = 5)
 }
