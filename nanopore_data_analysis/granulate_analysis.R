@@ -20,171 +20,213 @@ library(tidyverse)
 # granugraph()
 #-------------------------------
 granugraph <- function(file_name="genome_df.csv",
-                       window_length = 2, 
+                       window_length = 2,
+                       graph_them = T,
                        save_them=TRUE,
                        prefix=""){
   datum <- read_csv(file_name)
-  datum$rel_deleted <- datum$number_deleted/datum$number_hit
-  datum$rel_mismatched <- datum$number_mismatched/datum$number_hit
-  datum$rel_inserted <- datum$number_inserted/datum$number_hit
-  datum$plume_deleted <- 0
-  datum$plume_mismatched <- 0
-  datum$plume_inserted <- 0
-  datum$Freq <- datum$number_hit/max(datum$number_hit)
-  for (i in 1:nrow(datum)){
-    min_num <- i-window_length
-    max_num <- i+window_length
-    if (min_num<1) {
-      min_num<-1
+  if (!"plume_deleted" %in% names(datum) &
+      !"plume_mismatched" %in% names(datum) &
+      !"plume_inserted" %in% names(datum)){
+    datum$rel_deleted <- datum$number_deleted/datum$number_hit
+    datum$rel_mismatched <- datum$number_mismatched/datum$number_hit
+    datum$rel_inserted <- datum$number_inserted/datum$number_hit
+    datum$plume_deleted <- 0
+    datum$plume_mismatched <- 0
+    datum$plume_inserted <- 0
+    datum$Freq <- datum$number_hit/max(datum$number_hit)
+    for (i in 1:nrow(datum)){
+      min_num <- i-window_length
+      max_num <- i+window_length
+      if (min_num<1) {
+        min_num<-1
+      }
+      if (max_num > nrow(datum)){
+        max_num <- nrow(datum)
+      }
+      datum[i,"plume_deleted"] <- mean(datum[min_num:max_num,]$rel_deleted)
+      datum[i,"plume_mismatched"] <- mean(datum[min_num:max_num,]$rel_mismatched)
+      datum[i,"plume_inserted"] <- mean(datum[min_num:max_num,]$rel_inserted)
     }
-    if (max_num > nrow(datum)){
-      max_num <- nrow(datum)
-    }
-    datum[i,"plume_deleted"] <- mean(datum[min_num:max_num,]$rel_deleted)
-    datum[i,"plume_mismatched"] <- mean(datum[min_num:max_num,]$rel_mismatched)
-    datum[i,"plume_inserted"] <- mean(datum[min_num:max_num,]$rel_inserted)
-  }
-  write_csv(datum, file_name)
-  draft <- ggplot(data = datum, 
-                  aes(x = Position_num, y=Freq))+
-    geom_bar(stat = "identity", color = "black", fill = "black")+
-    labs(x = "Alignment Position", y = "Coverage")+
-    theme_bw()+
-    theme(legend.position = "top")
-  print(draft)
-  if(save_them){
-    ggsave(paste0(prefix, "coverage.png"), dpi=500)
+    write_csv(datum, file_name)
+  } else {
+    print("Granugraph data already detected. Skipping analysis")
   }
   
-  draft <- ggplot(data = datum, 
-                  aes(x = Position_num, y=number_hit,
-                      fill = rel_mismatched,
-                      color = rel_mismatched))+
-    geom_bar(stat = "identity")+
-    scale_fill_viridis_c(option="inferno")+
-    scale_color_viridis_c(option="inferno")+
-    labs(x = "Alignment Position", y = "Coverage")+
-    theme_bw()+
-    theme(legend.position = "top")
-  print(draft)
-  if(save_them){
-    ggsave(paste0(prefix, "rel_mismatched.png"), dpi=500)
-  }
-  draft <- ggplot(data = datum, 
-                  aes(x = Position_num, y=number_hit,
-                      fill = rel_deleted,
-                      color = rel_deleted))+
-    geom_bar(stat = "identity")+
-    scale_fill_viridis_c(option="inferno")+
-    scale_color_viridis_c(option="inferno")+
-    theme_bw()+
-    labs(x = "Alignment Position", y = "Coverage")+
-    theme(legend.position = "top")
-  print(draft)
-  if(save_them){
-    ggsave(paste0(prefix, "rel_deleted.png"), dpi=500)
-  }
-  draft <- ggplot(data = datum, 
-                  aes(x = Position_num, y=number_hit,
-                      fill = rel_inserted,
-                      color = rel_inserted))+
-    geom_bar(stat = "identity")+
-    scale_fill_viridis_c(option="inferno")+
-    scale_color_viridis_c(option="inferno")+
-    theme_bw()+
-    labs(x = "Alignment Position", y = "Coverage")+
-    theme(legend.position = "top")
-  print(draft)
-  if(save_them){
-    ggsave(paste0(prefix, "rel_inserted.png"), dpi=500)
-  }
-  
-  draft <- ggplot(data = datum, 
-                  aes(x = Position_num, y=number_hit,
-                      fill = plume_mismatched,
-                      color = plume_mismatched))+
-    geom_bar(stat = "identity")+
-    scale_fill_viridis_c(option="inferno")+
-    scale_color_viridis_c(option="inferno")+
-    theme_bw()+
-    labs(x = "Alignment Position", y = "Coverage")+
-    theme(legend.position = "top")
-  print(draft)
-  if(save_them){
-    ggsave(paste0(prefix, "plume_mismatched.png"), dpi=500)
-  }
-  draft <- ggplot(data = datum, 
-                  aes(x = Position_num, y=number_hit,
-                      fill = plume_deleted,
-                      color = plume_deleted))+
-    geom_bar(stat = "identity")+
-    scale_fill_viridis_c(option="inferno")+
-    scale_color_viridis_c(option="inferno")+
-    theme_bw()+
-    labs(x = "Alignment Position", y = "Coverage")+
-    theme(legend.position = "top")
-  print(draft)
-  if(save_them){
-    ggsave(paste0(prefix, "plume_deleted.png"), dpi=500)
-  }
-  draft <- ggplot(data = datum, 
-                  aes(x = Position_num, y=number_hit,
-                      fill = plume_inserted,
-                      color = plume_inserted))+
-    geom_bar(stat = "identity")+
-    scale_fill_viridis_c(option="inferno")+
-    scale_color_viridis_c(option="inferno")+
-    theme_bw()+
-    labs(x = "Alignment Position", y = "Coverage")+
-    theme(legend.position = "top")
-  print(draft)
-  if(save_them){
-    ggsave(paste0(prefix, "plume_inserted.png"), dpi=500)
+  if (graph_them){
+    draft <- ggplot(data = datum, 
+                    aes(x = Position_num, y=Freq))+
+      geom_bar(stat = "identity", color = "black", fill = "black")+
+      labs(x = "Alignment Position", y = "Coverage")+
+      theme_bw()+
+      theme(legend.position = "top")
+    print(draft)
+    if(save_them){
+      ggsave(paste0(prefix, "coverage.png"), dpi=500)
+    }
+    
+    draft <- ggplot(data = datum, 
+                    aes(x = Position_num, y=number_hit,
+                        fill = rel_mismatched,
+                        color = rel_mismatched))+
+      geom_bar(stat = "identity")+
+      scale_fill_viridis_c(option="inferno")+
+      scale_color_viridis_c(option="inferno")+
+      labs(x = "Alignment Position", y = "Coverage")+
+      theme_bw()+
+      theme(legend.position = "top")
+    print(draft)
+    if(save_them){
+      ggsave(paste0(prefix, "rel_mismatched.png"), dpi=500)
+    }
+    draft <- ggplot(data = datum, 
+                    aes(x = Position_num, y=number_hit,
+                        fill = rel_deleted,
+                        color = rel_deleted))+
+      geom_bar(stat = "identity")+
+      scale_fill_viridis_c(option="inferno")+
+      scale_color_viridis_c(option="inferno")+
+      theme_bw()+
+      labs(x = "Alignment Position", y = "Coverage")+
+      theme(legend.position = "top")
+    print(draft)
+    if(save_them){
+      ggsave(paste0(prefix, "rel_deleted.png"), dpi=500)
+    }
+    draft <- ggplot(data = datum, 
+                    aes(x = Position_num, y=number_hit,
+                        fill = rel_inserted,
+                        color = rel_inserted))+
+      geom_bar(stat = "identity")+
+      scale_fill_viridis_c(option="inferno")+
+      scale_color_viridis_c(option="inferno")+
+      theme_bw()+
+      labs(x = "Alignment Position", y = "Coverage")+
+      theme(legend.position = "top")
+    print(draft)
+    if(save_them){
+      ggsave(paste0(prefix, "rel_inserted.png"), dpi=500)
+    }
+    
+    draft <- ggplot(data = datum, 
+                    aes(x = Position_num, y=number_hit,
+                        fill = plume_mismatched,
+                        color = plume_mismatched))+
+      geom_bar(stat = "identity")+
+      scale_fill_viridis_c(option="inferno")+
+      scale_color_viridis_c(option="inferno")+
+      theme_bw()+
+      labs(x = "Alignment Position", y = "Coverage")+
+      theme(legend.position = "top")
+    print(draft)
+    if(save_them){
+      ggsave(paste0(prefix, "plume_mismatched.png"), dpi=500)
+    }
+    draft <- ggplot(data = datum, 
+                    aes(x = Position_num, y=number_hit,
+                        fill = plume_deleted,
+                        color = plume_deleted))+
+      geom_bar(stat = "identity")+
+      scale_fill_viridis_c(option="inferno")+
+      scale_color_viridis_c(option="inferno")+
+      theme_bw()+
+      labs(x = "Alignment Position", y = "Coverage")+
+      theme(legend.position = "top")
+    print(draft)
+    if(save_them){
+      ggsave(paste0(prefix, "plume_deleted.png"), dpi=500)
+    }
+    draft <- ggplot(data = datum, 
+                    aes(x = Position_num, y=number_hit,
+                        fill = plume_inserted,
+                        color = plume_inserted))+
+      geom_bar(stat = "identity")+
+      scale_fill_viridis_c(option="inferno")+
+      scale_color_viridis_c(option="inferno")+
+      theme_bw()+
+      labs(x = "Alignment Position", y = "Coverage")+
+      theme(legend.position = "top")
+    print(draft)
+    if(save_them){
+      ggsave(paste0(prefix, "plume_inserted.png"), dpi=500)
+    }
   }
 }
 
 #-------------------------------
 # stock_o_late()
 #-------------------------------
-stack_o_late <- function(file_name="reads_df.csv",
+stack_o_late <- function(file_name = "reads_df.csv",
+                         subset_num = 0,
                          split_hsps=F,
                          split_strand = F,
-                         set_line=0,
+                         set_line = 0,
+                         graph_it = T,
                          save_it = T,
                          prefix = "",
                          alph = 0.2){
+  # Read the file
   datum <- read_csv(file_name)
-  datum$aligned_length <- 0
-  datum$hsps_count <- 1
-  for (i in unique(datum$read_id)){
-    datum[datum$read_id ==i,]$hsps_count <- nrow(datum[datum$read_id==i,])
-    datum[datum$read_id ==i,]$aligned_length <- sum(datum[datum$read_id==i,]$length)
+  # Skips aligned_length generation if already present
+  if (!"aligned_length" %in% names(datum)){
+    # Sums the length of all alignments found on the read
+    datum$aligned_length <- 0
+    datum$hsps_count <- 1
+    for (i in unique(datum$read_id)){
+      datum[datum$read_id ==i,]$hsps_count <- nrow(datum[datum$read_id==i,])
+      datum[datum$read_id ==i,]$aligned_length <- sum(datum[datum$read_id==i,]$length)
+    }
+    #Orders by negative length
+    datum <- datum[order(-datum$aligned_length),]
+    datum$a_id <- ordered(-datum$aligned_length)
+    # Saves the file
+    write_csv(datum, file_name)
+  } else {
+    # Orders by negative length in case of graphing
+    print("Aggregate aligment length detected. Skipping analysis.")
+    datum <- datum[order(-datum$aligned_length),]
+    datum$a_id <- ordered(-datum$aligned_length)
   }
-  datum <- datum[order(-datum$aligned_length),]
-  datum$a_id <- ordered(-datum$aligned_length)
-  write_csv(datum, file_name)
-  draft <- ggplot(datum)+
-    #geom_vline(xintercept = 680, color="red", linetype = 2, alpha=0.3, linewidth=1)+
-    #geom_vline(xintercept = 2690, color="red", linetype = 2, alpha=0.3, linewidth=1)+
-    geom_segment(aes(x=h_start, xend=h_end, 
-                     y=a_id, yend=a_id), alpha=alph)+
-    ylab("Alignment length")+
-    xlab("Genome")+
-    theme_bw()+
-    theme(axis.text.y = element_blank(),
-          axis.ticks.y = element_blank())
-  if (split_hsps){
-    draft <- draft+facet_wrap(~hsps_count)
-  }
-  if (split_strand){
-    draft <- draft+facet_wrap(~h_strand)
-  }
-  if (set_line !=0){
-    draft <- draft+ geom_vline(xintercept = set_line, color = "red")
-  }
-  print(draft)
-  if (save_it){
-    ggsave(paste0(prefix, "stacks.png"), width = 8, height = 4, dpi = 500)
+  # Graphs is told to
+  if(graph_it){
+    #Subset the dataframe for very large files
+    if (subset_num > 0){
+      print(paste0("Subsetting graph to ", subset_num, " reads."))
+      # Caps sampling at max of reads
+      if (subset_num  > nrow(datum)){
+        print("Subset given exceeds number of reads. Defaulting to max")
+        subset_num <- nrow(datum)
+      }
+      # Randomly samples reads
+      datum <- datum[sample(nrow(datum), subset_num),]
+    }
+    # Graphs the data as a stacked-alignment plot
+    draft <- ggplot(datum)+
+      geom_segment(aes(x=h_start, xend=h_end, 
+                       y=a_id, yend=a_id), alpha=alph)+
+      ylab("Alignment length")+
+      xlab("Genome")+
+      theme_bw()+
+      theme(axis.text.y = element_blank(),
+            axis.ticks.y = element_blank())
+    # Adds facet_wraps
+    if (split_hsps | split_strand){
+      if (split_hsps & !split_strand){
+        draft <- draft+facet_wrap(~hsps_count)
+      } else if (!split_hsps & split_strand){
+        draft <- draft+facet_wrap(~h_strand)
+      } else {
+        draft <- draft+facet_wrap(~h_strand*hsps_count)
+      }
+    }
+    
+    if (set_line !=0){
+      draft <- draft+ geom_vline(xintercept = set_line, color = "red")
+    }
+    print(draft)
+    if (save_it){
+      ggsave(paste0(prefix, "stacks.png"), width = 8, height = 4, dpi = 500)
+    }
   }
 }
 
