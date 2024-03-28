@@ -149,6 +149,7 @@ try:
 
                     del_count=1
                     del_state=False
+                    insert_detected = False
                     del_seq=""
                     #Makes sure they're the same size
                     if len(hseq) == len(qseq):
@@ -169,7 +170,6 @@ try:
                                 new_seq += new_qseq[k]
                     try:
                         for k in range(0,len(new_seq)):
-                            insert_detected = False
                             #Tracks frequency of position occuring
                             genome_dict[str((ticker*k)+h_from)][1]+=1
 
@@ -182,7 +182,8 @@ try:
                             #Tracks insertions and inserted bases
                             if gymn_seq[0] == "-" and qseq[k] != "-":
                                 genome_dict[str((ticker*k)+h_from)][5]+=1
-                                genome_dict[str((ticker*k)+h_from)][6]+=qseq[k]
+                                genome_dict[str((ticker*k)+h_from)][6]+=qseq[k].upper()
+                                insert_detected=True
                                 current_inserts+=1
                                 if ticker==1:
                                     gymn_seq=gymn_seq[1:len(gymn_seq)]
@@ -221,6 +222,9 @@ try:
                                     del_df=del_df+str(del_count)+","+read_id+","+direction+","+del_orient+","+str(del_start)+","+str(len(del_seq))+","+del_seq+"\n"
                                     del_seq=""
                                     del_count+=1
+                            if insert_detected and gymn_seq[0] != "-":
+                                genome_dict[str((ticker*k)+h_from)][6]+="_"
+                                insert_detected = False
                     except:
                         print("\n")
                         error+=1
