@@ -176,6 +176,9 @@ stack_o_late <- function(file_name = "reads_df.csv",
       datum[datum$read_id ==i,]$hsps_count <- nrow(datum[datum$read_id==i,])
       datum[datum$read_id ==i,]$aligned_length <- sum(datum[datum$read_id==i,]$length)
     }
+    datum$deletion_ave <- datum$deletion_num/datum$length
+    datum$mismatch_ave <- datum$mismatch_num/datum$length
+    datum$insert_ave <- datum$insert_num/datum$length
     #Orders by negative length
     datum <- datum[order(-datum$aligned_length),]
     datum$a_id <- ordered(-datum$aligned_length)

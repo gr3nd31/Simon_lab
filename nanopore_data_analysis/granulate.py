@@ -75,7 +75,7 @@ for i in genome:
     start += 1
 
 del_df="Number,read_id,orientation,sense,position,size,del_seq\n"
-read_df="Number,read_id,hsps,bit_score,evalue,coverage,q_strand,h_strand,orientation,read_length,length,h_start,h_end,q_start,q_end,skipped,deletion_num,mismatch_num,insert_num,\n"
+read_df="Number,read_id,hsps,bit_score,evalue,coverage,q_strand,h_strand,orientation,read_length,length,h_start,h_end,q_start,q_end,skipped,deletion_num,mismatch_num,insert_num\n"
 
 print("Parsing file: "+locale)
 
