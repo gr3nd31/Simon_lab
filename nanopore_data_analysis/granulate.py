@@ -75,7 +75,7 @@ for i in genome:
     start += 1
 
 del_df="Number,read_id,orientation,sense,position,size,del_seq\n"
-read_df="Number,read_id,hsps,bit_score,evalue,coverage,q_strand,h_strand,orientation,read_length,length,h_start,h_end,q_start,q_end,skipped,max_insert_length\n"
+read_df="Number,read_id,hsps,bit_score,evalue,coverage,q_strand,h_strand,orientation,read_length,length,h_start,h_end,q_start,q_end,skipped,deletion_num,mismatch_num,insert_num,\n"
 
 print("Parsing file: "+locale)
 
@@ -105,7 +105,6 @@ try:
             read_data_raw = j["hits"][0]["hsps"]
             for hsps in read_data_raw:
                 read_data=hsps
-                max_insertion_length=0
                 hsps_number+=1
                 skipit="True"
                 try:
@@ -122,6 +121,11 @@ try:
                 q_strand=read_data['query_strand']
                 h_strand=read_data['hit_strand']
                 span=read_data['align_len']
+
+                current_inserts = 0
+                current_misses = 0
+                current_dels = 0
+
                 if len(read_data_raw) > 1 and hsps_number > 1:
                     old_h_from = read_data_raw[hsps_number-2]['hit_from']
                     old_h_to = read_data_raw[hsps_number-2]['hit_to']
@@ -142,8 +146,6 @@ try:
                 if skipit == "False":
                     hseq=read_data['hseq']
                     qseq=read_data['qseq']
-
-                    current_max_insert = 0
 
                     del_count=1
                     del_state=False
@@ -175,14 +177,13 @@ try:
                             if hseq[k].upper() != new_seq[k].upper() and new_seq[k] != "-":
                                 genome_dict[str((ticker*k)+h_from)][2]+=new_qseq[k].upper()
                                 genome_dict[str((ticker*k)+h_from)][3]+=1
+                                current_misses+=1
 
                             #Tracks insertions and inserted bases
                             if gymn_seq[0] == "-" and qseq[k] != "-":
-                                current_max_insert+=1
-                                insert_detected = True
-
                                 genome_dict[str((ticker*k)+h_from)][5]+=1
                                 genome_dict[str((ticker*k)+h_from)][6]+=qseq[k]
+                                current_inserts+=1
                                 if ticker==1:
                                     gymn_seq=gymn_seq[1:len(gymn_seq)]
                                     #qseq=qseq[1:len(qseq)]
@@ -197,14 +198,19 @@ try:
                                 #qseq=qseq[0:len(qseq)-1]
 
                             #Tracks deletions
+                            # Detects the start of a new deletion
                             if new_seq[k]=="-" and del_state==False:
                                 genome_dict[str((ticker*k)+h_from)][4]+=1
                                 del_state=True
+                                current_dels+=1
                                 del_start=(ticker*k)+h_from
                                 del_seq+=genome_dict[str((ticker*k)+h_from)][0]
+                            #Detects a continued deletion
                             elif new_seq[k]=="-" and del_state==True:
+                                current_dels+=1
                                 genome_dict[str((ticker*k)+h_from)][4]+=1
                                 del_seq+=genome_dict[str((ticker*k)+h_from)][0]
+                            # Detects the end of a string of deletions
                             elif new_seq[k]!="-" and del_state==True:
                                 del_state=False
                                 if len(del_seq) >= del_threshold:
@@ -215,16 +221,11 @@ try:
                                     del_df=del_df+str(del_count)+","+read_id+","+direction+","+del_orient+","+str(del_start)+","+str(len(del_seq))+","+del_seq+"\n"
                                     del_seq=""
                                     del_count+=1
-                            if insert_detected and gymn_seq[0] != "-":
-                                genome_dict[str((ticker*k)+h_from)][6]+="_"
-                                if max_insertion_length < current_max_insert:
-                                    max_insertion_length = current_max_insert
-                                    current_max_insert = 0
                     except:
                         print("\n")
                         error+=1
                         print(new_seq)
-                read_df = read_df+str(spot_read)+","+read_id+","+str(hsps_number)+","+str(read_data["bit_score"])+","+str(read_data["evalue"])+","+str(100*(span/len(genome)))+","+q_strand+","+h_strand+","+direction+","+str(read_length)+","+str(read_data['align_len'])+","+str(h_from)+","+str(h_to)+","+str(q_from)+","+str(q_to)+","+skipit+","+str(max_insertion_length)+"\n"
+                read_df = read_df+str(spot_read)+","+read_id+","+str(hsps_number)+","+str(read_data["bit_score"])+","+str(read_data["evalue"])+","+str(100*(span/len(genome)))+","+q_strand+","+h_strand+","+direction+","+str(read_length)+","+str(read_data['align_len'])+","+str(h_from)+","+str(h_to)+","+str(q_from)+","+str(q_to)+","+skipit+","+str(current_dels)+","+str(current_misses)+","+str(current_inserts)+"\n"
                 max_insertion_length = 0
             aligned_reads+=1
             if random_sample and aligned_reads >= sampling_number:
