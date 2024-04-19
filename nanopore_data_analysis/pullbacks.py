@@ -3,6 +3,7 @@ import argparse
 default_file = "list.txt"
 default_fasta_reads = "all_reads.fasta"
 default_out = "cy1_di"
+exclude = False
 
 # Initialize parser
 parser = argparse.ArgumentParser()
@@ -10,6 +11,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-l", "--list_to_pull", help = "Text file of read IDs to be pulled")
 parser.add_argument("-r", "--reads", help = "Fasta file of all reads")
 parser.add_argument("-o", "--out", help = "Text file of reads to be pulled")
+parser.add_argument("-e", "--exclude", help = "Exclude these reads instead of pulling them")
 parser.parse_args()
 args = parser.parse_args()
 
@@ -20,13 +22,18 @@ if args.reads:
     #print("yeah")
     default_fasta_reads = args.reads
     #print(default_fasta_reads)
+if args.exclude:
+    exclude=True
 if args.out:
     if not args.out.endswith(".fasta"):
         default_out = args.out+".fasta"
     else:
         default_out = args.out
 
-print("\nPulling reads listed in: "+default_file)
+if not exclude:
+    print("\nPulling reads listed in: "+default_file)
+else:
+    print("\nRemoving reads listed in: "+default_file)
 print("Pulling reads from: "+default_fasta_reads)
 
 f = open(default_file)
@@ -49,7 +56,15 @@ for j in fastq_reads:
     if ">" in label:
         label = label.split(">")[1]
         #print(label)
-    if label in x:
+    if label in x and not exclude:
+        hits +=1
+        #print("Found: "+label)
+        try:
+            hit_reads+=">"+label+"\n"+j.split("\n")[1]+"\n"
+        except:
+            continue
+            print(j)
+    elif label not in x and exclude:
         hits +=1
         #print("Found: "+label)
         try:
