@@ -4,7 +4,7 @@ from random import sample
 import argparse
 
 genome_file = "CY1.fasta"
-del_threshold = 3
+del_threshold = 6
 locale="both.json"
 evalue_threshold=1
 random_sample=False
@@ -77,6 +77,12 @@ for i in genome:
 del_df="Number,read_id,orientation,sense,position,size,del_seq\n"
 read_df="Number,read_id,hsps,bit_score,evalue,coverage,q_strand,h_strand,orientation,read_length,length,h_start,h_end,q_start,q_end,skipped,deletion_num,mismatch_num,insert_num\n"
 
+with open(save_locale+prefixed+'reads_df.csv', 'w') as f:
+    f.write(read_df)
+
+with open(save_locale+prefixed+'del_df.csv', 'w') as f:
+    f.write(del_df)
+
 print("Parsing file: "+locale)
 
 opened_file = open(locale, "r")
@@ -92,13 +98,17 @@ try:
     records=records['BlastOutput2']
     total_reads=len(records)
     if random_sample:
+        records=sample(records, sampling_number)
         print("Randomly sampling "+str(sampling_number)+" out of "+str(total_reads)+"...")
+    print("Found a total of "+str(total_reads)+" reads in blast file")
 
     spot_read=0
     for i in records:
         j=i["report"]["results"]["search"]
         try:
             spot_read+=1
+            if spot_read%1000 == 0:
+                print("Analyzing read: "+str(spot_read))
             hsps_number=0
             read_id = j["query_title"]
             read_length = j["query_len"]
@@ -219,7 +229,8 @@ try:
                                         del_orient = "Back"
                                     else:
                                         del_orient = "Front"
-                                    del_df=del_df+str(del_count)+","+read_id+","+direction+","+del_orient+","+str(del_start)+","+str(len(del_seq))+","+del_seq+"\n"
+                                    with open(save_locale+prefixed+'del_df.csv', 'a') as f:
+                                        f.write(str(del_count)+","+read_id+","+direction+","+del_orient+","+str(del_start)+","+str(len(del_seq))+","+del_seq+"\n")
                                     del_seq=""
                                     del_count+=1
                             if insert_detected and gymn_seq[0] != "-":
@@ -227,9 +238,10 @@ try:
                                 insert_detected = False
                     except:
                         print("\n")
-                        error+=1
+                        errors+=1
                         print(new_seq)
-                read_df = read_df+str(spot_read)+","+read_id+","+str(hsps_number)+","+str(read_data["bit_score"])+","+str(read_data["evalue"])+","+str(100*(span/len(genome)))+","+q_strand+","+h_strand+","+direction+","+str(read_length)+","+str(read_data['align_len'])+","+str(h_from)+","+str(h_to)+","+str(q_from)+","+str(q_to)+","+skipit+","+str(current_dels)+","+str(current_misses)+","+str(current_inserts)+"\n"
+                with open(save_locale+prefixed+'reads_df.csv', 'a') as f:
+                    f.write(str(spot_read)+","+read_id+","+str(hsps_number)+","+str(read_data["bit_score"])+","+str(read_data["evalue"])+","+str(100*(span/len(genome)))+","+q_strand+","+h_strand+","+direction+","+str(read_length)+","+str(read_data['align_len'])+","+str(h_from)+","+str(h_to)+","+str(q_from)+","+str(q_to)+","+skipit+","+str(current_dels)+","+str(current_misses)+","+str(current_inserts)+"\n")
                 max_insertion_length = 0
             aligned_reads+=1
             if random_sample and aligned_reads >= sampling_number:
@@ -242,7 +254,6 @@ try:
 except:
     print("Yeah, something went wrong")
 
-print("Found a total of "+str(total_reads)+" reads in blast file")
 print("Aligned reads: "+str(aligned_reads)+" ("+str(100*round(aligned_reads/total_reads,2))+"%)")
 if aligned_reads > 0:
     print("Aligned read errors: "+str(errors)+" ("+str(100*round(errors/aligned_reads,2))+"%)")
@@ -257,14 +268,8 @@ if aligned_reads > 0:
     with open(save_locale+prefixed+'genome_df.csv', 'w') as f:
         f.write(genome_df)
 
-    with open(save_locale+prefixed+'reads_df.csv', 'w') as f:
-        f.write(read_df)
-
-    with open(save_locale+prefixed+'del_df.csv', 'w') as f:
-        f.write(del_df)
-
 else:
     print("No reads found :-(")
     print("\n")
 
-print("Granulate complete.\n")
+print("Granulation complete.\n")
