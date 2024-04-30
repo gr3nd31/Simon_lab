@@ -17,14 +17,22 @@ primer_spot <- function(file_name,
   print("Pulling alignments...")
   #print(primer_length - primer_align_threshold)
   datum <- read_csv(file_name, show_col_types = F)
+  names(datum) <- c("Query", 
+                    "Seq_ID", 
+                    "Percent_identity", 
+                    "Length", 
+                    "Gaps", 
+                    "Gap_percent", 
+                    "q_start", 
+                    "q_end", 
+                    "sub_start", 
+                    "sub_end",
+                    "Expect", 
+                    "Score")
+  
   if (genome_file != ""){
     print("Genome file detected...")
-    the_genome <- ""
-    the_genome_raw <- unlist(read.table(genome_file, header = T))
-    for (i in the_genome_raw){
-      #print(i)
-      the_genome <- paste0(the_genome, i)
-    }
+    the_genome <- unlist(read.table(genome_file, header = T, sep = "\n")[1,1])
   }
   datum$sub_Orientation <- "Plus"
   datum[datum$sub_start > datum$sub_end,]$sub_Orientation <- "Minus" 
@@ -223,7 +231,7 @@ primer_spot <- function(file_name,
     draft <- draft+ylim(0, max(aligns$Aligned_depth_plus)+10)
   }
   print(draft)
-  ggsave("forward_primers.png", dpi = 150, height = 4, width = 5)
+  ggsave("forward_primers.png", dpi = 150, width = 3000, height = 750, units = "px")
   draft <- ggplot(data = aligns, aes(x = Position, y = Aligned_depth_minus))+
     geom_bar(stat = "identity", aes(fill = Clean_minus, color = Clean_minus))+
     scale_color_manual(values = c("black", "blue"))+
@@ -254,7 +262,7 @@ primer_spot <- function(file_name,
     draft <- draft+ylim(0, max(aligns$Aligned_depth_minus)+5)
   }
   print(draft)
-  ggsave("reverse_primers.png", dpi = 150, height = 4, width = 5)
+  ggsave("reverse_primers.png", dpi = 150, width = 3000, height = 750, units = "px")
   
   if (exists("primer_log")){
     #print(primer_log)
