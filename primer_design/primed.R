@@ -207,6 +207,7 @@ primer_spot <- function(file_name,
     scale_color_manual(values = c("black", "red"))+
     scale_fill_manual(values = c("black", "red"))+
     theme_bw()
+  trip <<- draft
   if(exists("primer_log") & map_primers){
     turn <- 0
     if (nrow(primer_log[primer_log$Sense == "Forward",]) > 0){
@@ -237,6 +238,7 @@ primer_spot <- function(file_name,
     scale_color_manual(values = c("black", "blue"))+
     scale_fill_manual(values = c("black", "blue"))+
     theme_bw()
+  jim <<- draft
   if(exists("primer_log") & map_primers){
     turn <- 0
     if (nrow(primer_log[primer_log$Sense == "Reverse",]) > 0){

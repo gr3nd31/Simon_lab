@@ -171,11 +171,27 @@ stack_o_late <- function(file_name = "reads_df.csv",
                          graph_it = T,
                          save_it = T,
                          prefix = "",
-                         alph = 0.2){
+                         alph = 0.2,
+                         pre_sub = F,
+                         skip_skips = T){
   # Read the file
   datum <- read_csv(file_name)
+  if (skip_skips){
+    datum <- datum[datum$skipped == "FALSE",]
+  }
+  
   # Skips aligned_length generation if already present
   if (!"aligned_length" %in% names(datum)){
+    if (pre_sub & subset_num > 0){
+      print(paste0("Pre-subsetting to ", subset_num, " reads."))
+      # Caps sampling at max of reads
+      if (subset_num  > nrow(datum)){
+        print("Subset given exceeds number of reads. Defaulting to max")
+        subset_num <- nrow(datum)
+      }
+      # Randomly samples reads
+      datum <- datum[sample(nrow(datum), subset_num),]
+    }
     # Sums the length of all alignments found on the read
     datum$aligned_length <- 0
     datum$hsps_count <- 1
@@ -190,7 +206,11 @@ stack_o_late <- function(file_name = "reads_df.csv",
     datum <- datum[order(-datum$aligned_length),]
     datum$a_id <- ordered(-datum$aligned_length)
     # Saves the file
-    write_csv(datum, file_name)
+    if (pre_sub){
+      write_csv(datum, paste0("pre_subbed_to_", subset_num, "_",file_name))
+    } else {
+      write_csv(datum, file_name)
+    }
   } else {
     # Orders by negative length in case of graphing
     print("Aggregate aligment length detected. Skipping analysis.")
@@ -234,6 +254,7 @@ stack_o_late <- function(file_name = "reads_df.csv",
       draft <- draft+ geom_vline(xintercept = set_line, color = "red")
     }
     print(draft)
+    jimmy <<- draft
     if (save_it){
       ggsave(paste0(prefix, "stacks.png"), width = 8, height = 4, dpi = 500)
     }
@@ -264,17 +285,25 @@ de_missed <- function(df = datum,
                       rel_percent_missed = "rel_mismatched",
                       list_of_misses="Other_nt", 
                       tag = ""){
-  interim <- df[unlist(df[rel_percent_missed]) > threshold & !is.na(unlist(df[rel_percent_missed])),]
+  interim <- df[unlist(df[rel_percent_missed]) > threshold & 
+                  !is.na(unlist(df[rel_percent_missed])),]
+  #print(interim)
   for (i in 1:nrow(interim)){
-    billies <- interim[i,list_of_misses]
-    billies <- toupper(billies)
+    billies <- unlist(interim[i,list_of_misses])
+    the_pick <- strsplit(billies, "_")[[1]]
+    the_g <- as.numeric(strsplit(the_pick[1], ":")[[1]][2])
+    the_c <- as.numeric(strsplit(the_pick[2], ":")[[1]][2])
+    the_a <- as.numeric(strsplit(the_pick[3], ":")[[1]][2])
+    the_t <- as.numeric(strsplit(the_pick[4], ":")[[1]][2])
+    the_u <- as.numeric(strsplit(the_pick[5], ":")[[1]][2])
+    totes <- the_g+the_c+the_a+the_t+the_u
     new_df <- tibble("Position" = interim[i,]$Position_num,
                      "Identity" = interim[i,]$Position_nt,
-                     "Count" = nchar(billies),
-                     "A"=100*str_count(billies, "A")/nchar(billies),
-                     "T"=100*str_count(billies, "T")/nchar(billies),
-                     "G"=100*str_count(billies, "G")/nchar(billies),
-                     "C"=100*str_count(billies, "C")/nchar(billies))
+                     "Count" = totes,
+                     "A"=100*the_a/totes,
+                     "T"=100*(the_t+the_u)/totes,
+                     "G"=100*the_g/totes,
+                     "C"=100*the_c/totes)
     if (!exists("gc_data")){
       gc_data <- new_df
     } else{
@@ -304,6 +333,7 @@ de_missed <- function(df = datum,
       nt_data <- rbind(nt_data, riff)
     }
   }
+  nt_data <- nt_data %>% replace(is.na(.), 0)
   print(nt_data)
   nt_data <- pivot_longer(data = nt_data, cols = c(4:7), names_to = "Conversion", values_to = "Percent")
   draft <- ggbarplot(data = nt_data, x = "Identity", y = "Percent", fill = "Conversion",
@@ -322,17 +352,32 @@ de_missed <- function(df = datum,
 
 fault_line <- function(genome = "genome_df.csv",
                        reads = "reads_df.csv",
+                       prefix = "",
                        graph_images = T,
                        save_images = T,
-                       max_percent = 10,
-                       max_size = F){
+                       max_percent = 100,
+                       min_size = F,
+                       max_size = F,
+                       quant = 0.9){
   genome_df <- read_csv(genome)
   reads_df <- read_csv(reads)
   
+  print(paste0("Total reads loaded: ", nrow(reads_df)))
   if (max_size){
     maxie <- readline(prompt = paste0("What max size should be applied? (genome is ", nrow(genome_df), "): "))
+  } else {
+    maxie <- nrow(genome_df)
   }
-  reads_df <- reads_df[reads_df$aligned_length <= as.numeric(maxie),]
+  if (min_size){
+    minnie <- readline(prompt = paste0("What min size should be applied? (Minumum alignment is ", min(reads_df$aligned_length), "): "))
+  } else {
+    minnie <- 1
+  }
+  reads_df <- reads_df[reads_df$aligned_length <= as.numeric(maxie) &
+                         reads_df$aligned_length >= as.numeric(minnie),]
+  if (max_size | min_size){
+    print(paste0("Reads after size trimming: ", nrow(reads_df)))
+  }
   
   genome_df$plus_depth <- 0
   genome_df$minus_depth <- 0
@@ -343,18 +388,25 @@ fault_line <- function(genome = "genome_df.csv",
   
   for (i in c(1:nrow(genome_df))){
     for (j in unique(reads_df$h_strand)){
-      crossers <- nrow(reads_df[reads_df$h_start <= i &
-                                  reads_df$h_end >= i &
-                                  reads_df$h_strand == j,])
-      starters <- nrow(reads_df[reads_df$h_start ==i &
-                                  reads_df$h_strand == j,])
-      enders <- nrow(reads_df[reads_df$h_end ==i &
-                                reads_df$h_strand == j,])
       if (j == "Plus"){
+        crossers <- nrow(reads_df[reads_df$h_start <= i &
+                                    reads_df$h_end >= i &
+                                    reads_df$h_strand == j,])
+        starters <- nrow(reads_df[reads_df$h_start ==i &
+                                    reads_df$h_strand == j,])
+        enders <- nrow(reads_df[reads_df$h_end ==i &
+                                  reads_df$h_strand == j,])
         genome_df[genome_df$Position_num == i,]$plus_depth <- crossers
         genome_df[genome_df$Position_num == i,]$plus_starts <- starters
         genome_df[genome_df$Position_num == i,]$plus_ends <- enders
       } else {
+        crossers <- nrow(reads_df[reads_df$h_start >= i &
+                                    reads_df$h_end <= i &
+                                    reads_df$h_strand == j,])
+        starters <- nrow(reads_df[reads_df$h_end == i &
+                                    reads_df$h_strand == j,])
+        enders <- nrow(reads_df[reads_df$h_start ==i &
+                                  reads_df$h_strand == j,])
         genome_df[genome_df$Position_num == i,]$minus_depth <- crossers
         genome_df[genome_df$Position_num == i,]$minus_starts <- starters
         genome_df[genome_df$Position_num == i,]$minus_ends <- enders
@@ -367,12 +419,16 @@ fault_line <- function(genome = "genome_df.csv",
   genome_df$minus_ends_percent <- 100*genome_df$minus_ends/genome_df$minus_depth
   
   genome_df$total_depth <- genome_df$plus_depth+genome_df$minus_depth
-  genome_df$total_starts <- genome_df$plus_starts+genome_df$minus_starts
-  genome_df$total_ends <- genome_df$plus_ends+genome_df$minus_ends
+  genome_df$total_starts <- genome_df$plus_ends+genome_df$minus_starts
+  genome_df$total_ends <- genome_df$plus_starts+genome_df$minus_ends
   genome_df$starts_percent <- 100*genome_df$total_starts/genome_df$total_depth
   genome_df$ends_percent <- 100*genome_df$total_ends/genome_df$total_depth
+  genome_df$ends_quantile <- genome_df$ends_percent/quantile(genome_df[!is.na(genome_df$ends_percent),]$ends_percent, probs = seq(0,1,quant))[2]
   
-  write_csv(genome_df, genome)
+  #print(names(genome_df))
+  trixie <- genome_df[,c(1:3,15:31)]
+  
+  write_csv(trixie, paste0(prefix,"fault_lines.csv"))
   if (graph_images){
     draft <- ggbarplot(data = genome_df, 
                        x = "Position_num",
@@ -384,7 +440,7 @@ fault_line <- function(genome = "genome_df.csv",
             axis.ticks.x = element_blank())
     print(draft)
     if (save_images){
-      ggsave("start_percents.png", dpi = 300)
+      ggsave(paste0(prefix, "start_percents.png"), dpi = 300)
     }
     draft <- ggbarplot(data = genome_df, 
                        x = "Position_num",
@@ -396,8 +452,47 @@ fault_line <- function(genome = "genome_df.csv",
             axis.ticks.x = element_blank())
     print(draft)
     if (save_images){
-      ggsave("end_percents.png", dpi = 300)
+      ggsave(paste0(prefix, "end_percents.png"), dpi = 300)
+    }
+    draft <- ggbarplot(data = genome_df, 
+                       x = "Position_num",
+                       y = "ends_quantile")+
+      labs(x = "Genome position",
+           y = "Relative end frequency")+
+      theme(axis.text.x = element_blank(),
+            axis.ticks.x = element_blank())
+    print(draft)
+    if (save_images){
+      ggsave("end_quant.png", dpi = 300)
     }
   }
+}
+
+fault_align <- function(shaped = "fault_lines.csv",
+                        control = "dmso_fault_lines.csv",
+                        prefix = "",
+                        quant = 0.9,
+                        save_images = T){
+  shape_data <- read_csv(shaped)
+  shape_name <- strsplit(shaped, ".csv")[[1]][1]
+  print(shape_name)
+  control_data <- read_csv(control)
+  control_name <- strsplit(control, ".csv")[[1]][1]
+  
+  shape_data$relative_ends <- shape_data$ends_percent-control_data$ends_percent
+  shape_data$relative_ends_quantile <- shape_data$relative_ends/quantile(shape_data[!is.na(shape_data$relative_ends),]$relative_ends, probs = seq(0,1,quant))[2]
+  draft <- ggbarplot(data = shape_data, 
+                     x = "Position_num",
+                     y = "relative_ends_quantile")+
+    ylim(-1, 5)+
+    labs(x = "Genome position",
+         y = "Relative end frequency")+
+    theme(axis.text.x = element_blank(),
+          axis.ticks.x = element_blank())
+  print(draft)
+  if (save_images){
+    ggsave("rel_end_quant.png", dpi = 300)
+  }
+  write_csv(shape_data, paste0(shape_name, "_normalized_to_", prefix, ".csv"))
 }
 

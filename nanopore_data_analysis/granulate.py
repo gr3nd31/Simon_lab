@@ -12,6 +12,7 @@ sampling_number=2283
 save_locale="./"
 prefixed=""
 max_hsps=10
+target_title=""
 
 # Initialize parser
 parser = argparse.ArgumentParser()
@@ -22,6 +23,7 @@ parser.add_argument("-d", "--deletion_threshold", help = "Minimum deletion size 
 parser.add_argument("-e", "--evalue_threshold", help = "Minimum evalue score for alignments to be included")
 parser.add_argument("-o", "--output", help = "Path to output. Default is current directory")
 parser.add_argument("-t", "--tag", help = "Prefix tag for files")
+parser.add_argument("-r", "--reference", help = "Name of reference as it is presented in the json description.")
 parser.parse_args()
 
 print("\n")
@@ -51,6 +53,8 @@ if args.output:
 if args.tag:
     prefixed=args.tag
     print("Addding prefix of % s to files" % prefixed)
+if args.reference:
+    target_title=args.reference
 
 
 print("Comparing reads in "+locale+" with "+genome_file+"...\n")
@@ -71,10 +75,11 @@ genome_dict = {}
 start=1
 for i in genome:
 #                    Letter, hit, hit_letter, mismatch, deletion, insert, insert_letter
-    genome_dict[str(start)] = [i.upper(),0,"",0,0,0,""]
+    genome_dict[str(start)] = [i.upper(), 0, {"G":0, "A":0, "T":0, "C":0, "U":0, "E":0}, 0, 0, 0, {"G":0, "A":0, "T":0, "C":0, "U":0, "E":0}]
     start += 1
 
 del_df="Number,read_id,orientation,sense,position,size,del_seq\n"
+ins_df="Number,read_id,orientation,sense,position,size,ins_seq\n"
 read_df="Number,read_id,hsps,bit_score,evalue,coverage,q_strand,h_strand,orientation,read_length,length,h_start,h_end,q_start,q_end,skipped,deletion_num,mismatch_num,insert_num\n"
 
 with open(save_locale+prefixed+'reads_df.csv', 'w') as f:
@@ -103,11 +108,12 @@ try:
     print("Found a total of "+str(total_reads)+" reads in blast file")
 
     spot_read=0
+    zippy = 0
     for i in records:
         j=i["report"]["results"]["search"]
         try:
             spot_read+=1
-            if spot_read%1000 == 0:
+            if spot_read%10000 == 0:
                 print("Analyzing read: "+str(spot_read))
             hsps_number=0
             read_id = j["query_title"]
@@ -123,6 +129,18 @@ try:
                 except:
                     if "e-" in read_data["evalue"]:
                         skipit="False"
+                try:
+                    the_title = j["hits"][0]["description"][0]["title"]
+                    if target_title == "":
+                        skipit="False"
+                    elif the_title.lower() == target_title.lower() and target_title != "":
+                        skipit="False"
+                        #print(the_title)
+                    else:
+                        skipit = "True"
+                        #print(the_title)
+                except:
+                    continue
 
                 h_from=read_data['hit_from']
                 h_to=read_data['hit_to']
@@ -163,36 +181,46 @@ try:
                     del_seq=""
                     #Makes sure they're the same size
                     if len(hseq) == len(qseq):
-                        new_seq=""
                         new_qseq=""
-                        #Removes the inserts
+                        #Removes the inserts from the query by seeing if there is an '-' in the hit sequence
                         for k in range(0,len(qseq)):
                             if hseq[k]=="-":
                                 new_qseq+=""
                             else:
                                 new_qseq+=qseq[k]
+                        # hseq = hit sequence with no inserts
+                        # gymn_seq = hit sequence WITH inserts
+                        # new_seq = query sequence with deletions but without inserts
+                        # qseq = query sequence with deletions and inserts
                         gymn_seq = hseq
                         hseq=hseq.replace("-", "")
-                        for k in range(0,len(new_qseq)):
-                            if new_qseq[k] == "-":
-                                new_seq += "-"
-                            else:
-                                new_seq += new_qseq[k]
                     try:
-                        for k in range(0,len(new_seq)):
+                        for k in range(0,len(new_qseq)):
                             #Tracks frequency of position occuring
+                            the_step = "position"
                             genome_dict[str((ticker*k)+h_from)][1]+=1
 
-                            #Tracks mismatch freqncy and alternate base
-                            if hseq[k].upper() != new_seq[k].upper() and new_seq[k] != "-":
-                                genome_dict[str((ticker*k)+h_from)][2]+=new_qseq[k].upper()
-                                genome_dict[str((ticker*k)+h_from)][3]+=1
-                                current_misses+=1
+                            #Tracks mismatch freqncy and alternate base by finding places the new_seq mismatches with the hseq but isn't a deletion
+                            the_step = "mismatch"
+                            if hseq[k].upper() != new_qseq[k].upper() and new_qseq[k] != "-" and not del_state:
+                                try:
+                                    if genome_dict[str((ticker*k)+h_from)][0] != new_qseq[k].upper():
+                                        genome_dict[str((ticker*k)+h_from)][2][new_qseq[k].upper()]+=1
+                                        genome_dict[str((ticker*k)+h_from)][3]+=1
+                                        current_misses+=1
+                                except:
+                                    print(new_qseq[k].upper())
+                                    print(genome_dict[str((ticker*k)+h_from)][2])
+                                
 
                             #Tracks insertions and inserted bases
+                            the_step = "insert"
                             if gymn_seq[0] == "-" and qseq[k] != "-":
                                 genome_dict[str((ticker*k)+h_from)][5]+=1
-                                genome_dict[str((ticker*k)+h_from)][6]+=qseq[k].upper()
+                                try:
+                                    genome_dict[str((ticker*k)+h_from)][6][qseq[k].upper()]+=1
+                                except:
+                                    print(qseq[k].upper())
                                 insert_detected=True
                                 current_inserts+=1
                                 if ticker==1:
@@ -210,20 +238,31 @@ try:
 
                             #Tracks deletions
                             # Detects the start of a new deletion
-                            if new_seq[k]=="-" and del_state==False:
+                            the_step = "start_deletions"
+                            if new_qseq[k]=="-" and del_state==False:
                                 genome_dict[str((ticker*k)+h_from)][4]+=1
                                 del_state=True
                                 current_dels+=1
                                 del_start=(ticker*k)+h_from
                                 del_seq+=genome_dict[str((ticker*k)+h_from)][0]
                             #Detects a continued deletion
-                            elif new_seq[k]=="-" and del_state==True:
+                            elif new_qseq[k]=="-" and del_state==True:
                                 current_dels+=1
                                 genome_dict[str((ticker*k)+h_from)][4]+=1
                                 del_seq+=genome_dict[str((ticker*k)+h_from)][0]
                             # Detects the end of a string of deletions
-                            elif new_seq[k]!="-" and del_state==True:
+                            elif new_qseq[k]!="-" and del_state==True:
                                 del_state=False
+                                if hseq[k].upper() != new_qseq[k].upper():
+                                    try:
+                                        if genome_dict[str((ticker*k)+h_from)][0] != new_qseq[k].upper():
+                                            genome_dict[str((ticker*k)+h_from)][2][new_qseq[k].upper()]+=1
+                                            genome_dict[str((ticker*k)+h_from)][3]+=1
+                                            current_misses+=1
+                                    except:
+                                        print(new_qseq[k].upper())
+                                        print(genome_dict[str((ticker*k)+h_from)][2])
+
                                 if len(del_seq) >= del_threshold:
                                     if (ticker*k)+h_from > len(genome)/2:
                                         del_orient = "Back"
@@ -234,16 +273,16 @@ try:
                                     del_seq=""
                                     del_count+=1
                             if insert_detected and gymn_seq[0] != "-":
-                                genome_dict[str((ticker*k)+h_from)][6]+="_"
+                                genome_dict[str((ticker*k)+h_from)][6]["E"]+=1
                                 insert_detected = False
                     except:
-                        print("\n")
+                        #print(the_step)
                         errors+=1
-                        print(new_seq)
+                        #print(new_seq)
+                    aligned_reads+=1
                 with open(save_locale+prefixed+'reads_df.csv', 'a') as f:
                     f.write(str(spot_read)+","+read_id+","+str(hsps_number)+","+str(read_data["bit_score"])+","+str(read_data["evalue"])+","+str(100*(span/len(genome)))+","+q_strand+","+h_strand+","+direction+","+str(read_length)+","+str(read_data['align_len'])+","+str(h_from)+","+str(h_to)+","+str(q_from)+","+str(q_to)+","+skipit+","+str(current_dels)+","+str(current_misses)+","+str(current_inserts)+"\n")
                 max_insertion_length = 0
-            aligned_reads+=1
             if random_sample and aligned_reads >= sampling_number:
                 break
 
@@ -262,7 +301,7 @@ if aligned_reads > 0:
     #print(genome_dict)
     genome_df="Position_num,Position_nt,number_hit,Other_nt,number_mismatched,number_deleted,number_inserted,inserted_nt\n"
     for i in genome_dict:
-        genome_df=genome_df+i+","+genome_dict[i][0]+","+str(genome_dict[i][1])+","+genome_dict[i][2]+","+str(genome_dict[i][3])+","+str(genome_dict[i][4])+","+str(genome_dict[i][5])+","+genome_dict[i][6]+"\n"
+        genome_df=genome_df+i+","+genome_dict[i][0]+","+str(genome_dict[i][1])+",G:"+str(genome_dict[i][2]["G"])+"_C:"+str(genome_dict[i][2]["C"])+"_A:"+str(genome_dict[i][2]["A"])+"_T:"+str(genome_dict[i][2]["T"])+"_U:"+str(genome_dict[i][2]["U"])+","+str(genome_dict[i][3])+","+str(genome_dict[i][4])+","+str(genome_dict[i][5])+",G:"+str(genome_dict[i][6]["G"])+"_C:"+str(genome_dict[i][6]["C"])+"_A:"+str(genome_dict[i][6]["A"])+"_T:"+str(genome_dict[i][6]["T"])+"_U:"+str(genome_dict[i][6]["U"])+"_E:"+str(genome_dict[i][6]["E"])+"\n"
 
     print("Writing files...")
     with open(save_locale+prefixed+'genome_df.csv', 'w') as f:
