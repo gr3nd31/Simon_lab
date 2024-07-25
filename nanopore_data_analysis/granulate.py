@@ -260,8 +260,9 @@ try:
                                             genome_dict[str((ticker*k)+h_from)][3]+=1
                                             current_misses+=1
                                     except:
-                                        print(new_qseq[k].upper())
-                                        print(genome_dict[str((ticker*k)+h_from)][2])
+                                        #print(new_qseq[k].upper())
+                                        #print(genome_dict[str((ticker*k)+h_from)][2])
+                                        pass
 
                                 if len(del_seq) >= del_threshold:
                                     if (ticker*k)+h_from > len(genome)/2:

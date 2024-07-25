@@ -19,6 +19,8 @@
 
 library(ggpubr)
 library(tidyverse)
+library(plotly)
+library(htmlwidgets)
 
 #-------------------------------
 # granugraph()
@@ -28,6 +30,7 @@ granugraph <- function(file_name="genome_df.csv",
                        window_length = 2,
                        graph_them = T,
                        save_them=TRUE,
+                       graph_skew = FALSE,
                        prefix=""){
   datum <- read_csv(file_name)
   if (!"plume_deleted" %in% names(datum) &
@@ -155,6 +158,42 @@ granugraph <- function(file_name="genome_df.csv",
     if(save_them){
       ggsave(paste0(prefix, "plume_inserted.png"), dpi=500)
     }
+    if (graph_skew){
+      datum$Position_num_2 <- as.character(datum$Position_num)
+      draft <- ggplot(data = datum, 
+                      aes(x = Position_num, y=Freq,
+                          fill = Position_num,
+                          color = Position_num))+
+        geom_bar(stat = "identity")+
+        scale_fill_viridis_b(option="viridis")+
+        scale_color_viridis_b(option="viridis")+
+        theme_bw()+
+        labs(x = "Alignment Position", y = "Frequency")+
+        theme(legend.position = "top",
+              axis.text.x = element_blank(), 
+              axis.ticks.x = element_blank())
+      print(draft)
+      if(save_them){
+        ggsave(paste0(prefix, "coverage_binned.png"), dpi=500)
+      }
+      
+      draft <- ggplot(data = datum, 
+                      aes(x = fct_reorder(Position_num_2, -Freq), y=Freq,
+                          fill = Position_num,
+                          color = Position_num))+
+        geom_bar(stat = "identity")+
+        scale_fill_viridis_b(option="viridis")+
+        scale_color_viridis_b(option="viridis")+
+        theme_bw()+
+        labs(x = "Alignment Position", y = "Frequency")+
+        theme(legend.position = "top",
+              axis.text.x = element_blank(), 
+              axis.ticks.x = element_blank())
+      print(draft)
+      if(save_them){
+        ggsave(paste0(prefix, "coverage_sorted.png"), dpi=500)
+      }
+    }
   }
 }
 
@@ -167,12 +206,15 @@ stack_o_late <- function(file_name = "reads_df.csv",
                          subset_num = 0,
                          split_hsps=F,
                          split_strand = F,
+                         color_strand = F,
                          set_line = 0,
                          graph_it = T,
                          save_it = T,
                          prefix = "",
                          alph = 0.2,
+                         width = 1,
                          pre_sub = F,
+                         make_widget = F,
                          skip_skips = T){
   # Read the file
   datum <- read_csv(file_name)
@@ -231,14 +273,27 @@ stack_o_late <- function(file_name = "reads_df.csv",
       datum <- datum[sample(nrow(datum), subset_num),]
     }
     # Graphs the data as a stacked-alignment plot
-    draft <- ggplot(datum)+
-      geom_segment(aes(x=h_start, xend=h_end, 
-                       y=a_id, yend=a_id), alpha=alph)+
-      ylab("Alignment length")+
-      xlab("Genome")+
-      theme_bw()+
-      theme(axis.text.y = element_blank(),
-            axis.ticks.y = element_blank())
+    if (color_strand){
+      draft <- ggplot(datum)+
+        geom_segment(aes(x=h_start, xend=h_end, 
+                         y=a_id, yend=a_id,
+                         color = h_strand), alpha=alph, linewidth = width)+
+        ylab("Alignment length")+
+        xlab("Genome")+
+        theme_bw()+
+        theme(axis.text.y = element_blank(),
+              axis.ticks.y = element_blank())
+    } else {
+      draft <- ggplot(datum)+
+        geom_segment(aes(x=h_start, xend=h_end, 
+                         y=a_id, yend=a_id), alpha=alph, linewidth = width)+
+        ylab("Alignment length")+
+        xlab("Genome")+
+        theme_bw()+
+        theme(axis.text.y = element_blank(),
+              axis.ticks.y = element_blank())
+    }
+    
     # Adds facet_wraps
     if (split_hsps | split_strand){
       if (split_hsps & !split_strand){
@@ -254,9 +309,11 @@ stack_o_late <- function(file_name = "reads_df.csv",
       draft <- draft+ geom_vline(xintercept = set_line, color = "red")
     }
     print(draft)
-    jimmy <<- draft
     if (save_it){
       ggsave(paste0(prefix, "stacks.png"), width = 8, height = 4, dpi = 500)
+    }
+    if (make_widget){
+      htmlwidgets::saveWidget(ggplotly(draft), paste0(prefix, "stacks.html"), selfcontained = T)
     }
   }
 }
