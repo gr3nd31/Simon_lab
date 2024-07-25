@@ -46,6 +46,8 @@ if 'reads' in globals():
         if read != "":
             theRead = read.strip().split("\n")
             readID = theRead[0]
+            if len(readID) > 36:
+                readID = readID.split(" ")[0]
             try:
                 os.mkdir("./recombo/"+readID)
             except:

@@ -1,8 +1,8 @@
 #! /bin/bash
 
-db_file=TCV_et_al.fasta
-read_file=tcv_reads.fasta
-window_length=80
+db_file=CY1_CY2.fasta
+read_file=cy1.fasta
+window_length=100
 window_overlap=0
 prefix=""
 blast_task="blastn"
