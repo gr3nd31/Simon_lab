@@ -3,7 +3,8 @@ args = commandArgs(trailingOnly=TRUE)
 
 suppressPackageStartupMessages(library(tidyverse))
 find_names_and_frames <- function(list_file = "list.csv",
-                                  db_file = "nucleotide_list.csv"){
+                                  db_file = "nucleotide_list.csv",
+                                  orf_name = "none"){
   the_db <- read_csv(db_file, show_col_types = F)
   the_list <- read.csv(list_file, header=F)
   seqs <- list.files("nucleotide_seqs/")
@@ -21,6 +22,7 @@ find_names_and_frames <- function(list_file = "list.csv",
       the_db <- rbind(the_db, chicken)
     }
   }
+  
   for (i in unique(unlist(the_db$Accession_id))){
     #print(i)
     if (is.na(the_db[the_db$Accession_id == i,]$Name)){
@@ -32,10 +34,34 @@ find_names_and_frames <- function(list_file = "list.csv",
       the_db[the_db$Accession_id == i,]$Name <- the_name
     }
   }
-  if (ncol(the_list) > 1){
+
+  if (ncol(the_list) > 1 & orf_name == "none"){
     cat("Frames detected, generating tree file from subsetted sequences.\n")
     names(the_list) <- c("Acc", "Start", "Stop")
     frames <- T
+  } else if (orf_name != "none"){
+    frames <- T
+    names(the_list) <- c("Acc", "Start", "Stop")
+    cat(paste0("Pulling sequences from orf: ", orf_name,".\n"))
+    for (i in unique(unlist(the_list$Acc))){
+      orf_found <- F
+      orf_string <- strsplit(the_db[the_db$Accession_id == i,]$ORFs, ",")[[1]]
+      for (j in orf_string){
+        j <- trimws(j)
+        j_split <- strsplit(j, "\\[")[[1]][1]
+        if (j_split == orf_name){
+          orf_range <- strsplit(trimws(j), "\\[")[[1]][2]
+          orf_range <- strsplit(orf_range, "\\]")[[1]][1]
+          orf_range <- strsplit(orf_range, "\\:")[[1]]
+          the_list[the_list$Acc == i,]$Start <- as.numeric(orf_range[1])
+          the_list[the_list$Acc == i,]$Stop <- as.numeric(orf_range[2])
+          orf_found <- T
+        }
+      }
+      if (!orf_found){
+        cat(paste0("Orf ", orf_name, " not found in ", i,". Make sure annotation is formatted correctly. Defaulting to whole sequence.\n"))
+      }
+    }
   } else {
     cat("Generating tree file using the full sequences.\n")
     names(the_list) <- c("Acc")
@@ -72,4 +98,4 @@ find_names_and_frames <- function(list_file = "list.csv",
   write_csv(the_db, db_file)
 }
 
-find_names_and_frames(list_file = args[1], db_file = args[2])
+find_names_and_frames(list_file = args[1], db_file = args[2], orf_name = args[3])

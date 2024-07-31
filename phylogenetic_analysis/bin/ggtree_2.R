@@ -20,12 +20,11 @@ if (length(the_db$Tag > 1)){
   }
 }
 tree2 <- groupClade(tree, clades[c(1:5)])
-draft <- ggtree(tree2, size = 1.5, linetype = 1, aes(color = group))
-draft <- draft+  
-  geom_tiplab(align = T)+
+draft <- ggtree(tree, size = 1.5, linetype = 1)+
+  geom_tiplab(align = T, hjust = 0.2)+
   geom_treescale(linesize = 1.5)+
-  geom_text(aes(label=node, hjust=-0.3))+
+  #geom_text(aes(label=node, hjust=-0.3))+
   theme_tree()
 
 print(draft)
-ggsave("sequences_tree.svg")
+ggsave("RdRp_tree.svg")

@@ -1,5 +1,10 @@
 #! /bin/bash
 
+#$1 = Type of run: `fast` vs `full`
+#$2 = Type of analysis: `nucl` for nucleotide or `aa` for amino acids (NOT FUNCTIONAL YET)
+#$3 = Path to list file
+#$4 = Name of ORF to compare (MUST BE ANNOTATED IN THE DB FILE AS `ORFNAME[START:STOP],...`)
+
 
 if [ "$2"=="nucl" ]; then
     db_type=nucleotide_seqs
@@ -42,7 +47,7 @@ if [ "$2"=="nucl" ]; then
     fi
 
     # Generates alignment fasta
-    Rscript bin/find_names_and_frames.R $3 nucleotide_list.csv
+    Rscript bin/find_names_and_frames.R $3 nucleotide_list.csv $4
 
     # Runs mafft alignment and removes the raw sequence file
     echo "Beginning alignment"
@@ -84,5 +89,5 @@ fi
 
 # Creates a tree pdf
 echo "Creating tree"
-Rscript bin/ggtree.R RAxML_bestTree.sequences_tree $4
+Rscript bin/ggtree.R RAxML_bestTree.sequences_tree
 echo Completed
