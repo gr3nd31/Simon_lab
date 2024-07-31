@@ -41,6 +41,8 @@ find_names_and_frames <- function(list_file = "list.csv",
     frames <- T
   } else if (orf_name != "none"){
     frames <- T
+    the_list$Start <- 0
+    the_list$Stop <- 0
     names(the_list) <- c("Acc", "Start", "Stop")
     cat(paste0("Pulling sequences from orf: ", orf_name,".\n"))
     for (i in unique(unlist(the_list$Acc))){
@@ -77,7 +79,7 @@ find_names_and_frames <- function(list_file = "list.csv",
     #print(the_db[the_db$Accession_id == i,]$Name)
     tree_file <- paste0(tree_file, ">", the_db[the_db$Accession_id == i,]$Name, "\n")
     the_read <- ""
-    the_start <- 0
+    the_start <- 1
     the_fasta <- read.table(paste0("nucleotide_seqs/",i),
                             header = F,
                             sep = "\n")
@@ -85,11 +87,11 @@ find_names_and_frames <- function(list_file = "list.csv",
       the_read <- paste0(the_read, the_fasta[j,1])
     }
     the_end <- nchar(the_read)
-    if (frames == T & !is.na(the_list[the_list$Acc == i,]$Start)){
+    if (frames == T & !is.na(the_list[the_list$Acc == i,]$Start) & the_list[the_list$Acc == i,]$Start > 0){
       the_start <- the_list[the_list$Acc == i,]$Start
     } 
     
-    if (frames == T & !is.na(the_list[the_list$Acc == i,]$Stop)){
+    if (frames == T & !is.na(the_list[the_list$Acc == i,]$Stop) & the_list[the_list$Acc == i,]$Stop > 0){
       the_end <- the_list[the_list$Acc == i,]$Stop
     }
     tree_file <- paste0(tree_file, substr(the_read, the_start, the_end), "\n")
