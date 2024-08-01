@@ -12,13 +12,15 @@ find_names_and_frames <- function(list_file = "list.csv",
   
   for (i in unique(seqs)){
     if (!i %in% unique(unlist(the_db$Accession_id))){
-      cat(paste0("Found sequence not int database: ",i, ".\n"))
+      cat(paste0("Found sequence not in database: ",i, ".\n"))
       the_fasta <- read.table(paste0("nucleotide_seqs/",i),
                                 header = F,
                                 sep = "\n")
       the_name <- substr(the_fasta[1,], 2, nchar(the_fasta[1,]))
       chicken <- tibble("Accession_id" = i,
-                          "Name" = the_name)
+                        "Name" = the_name,
+                        "ORFs" = "Unknown",
+                        "Tag" = "None")
       the_db <- rbind(the_db, chicken)
     }
   }
