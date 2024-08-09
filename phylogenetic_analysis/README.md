@@ -35,4 +35,4 @@ The purpose of this script is to take a list of NCBI accession numbers, pull the
 
 ### Subsetting sequences
 
-To subset a sequence *without* annotating a specific ORF, add the start and stop positions in the LIST_OF_ACCESSION_NUMBERS file (Example: `EU151723,20,568` will take only positions 20 through 568 for the alignment process).
+To subset a sequence *without* annotating a specific ORF, add the start and stop positions in the LIST_OF_ACCESSION_NUMBERS file (Example: `EU151723,20,568` will take only positions 20 through 568 for the alignment process). The "list_rdrp.txt" and "list_3prime_end.txt" files are examples of this.
