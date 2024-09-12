@@ -4,9 +4,10 @@ args = commandArgs(trailingOnly=TRUE)
 suppressPackageStartupMessages(library(tidyverse))
 find_names_and_frames <- function(list_file = "list.csv",
                                   db_file = "nucleotide_list.csv",
-                                  orf_name = "none"){
-  the_db <- read_csv(db_file, show_col_types = F)
-  the_list <- read.csv(list_file, header=F)
+                                  orf_name = "none",
+                                  translations = "none"){
+  the_db <- read_csv(args[2], show_col_types = F)
+  the_list <- read.csv(args[1], header=F)
   if (db_file == "nucleotide_list.csv"){
     seqs_type <- "nucleotide_seqs/"
   } else {
@@ -14,6 +15,13 @@ find_names_and_frames <- function(list_file = "list.csv",
   }
   seqs <- list.files(seqs_type)
   tree_file <- ""
+
+  if (length(args) > 2) {
+    orf_name <- args[3]
+  }
+  if (length(args) > 3) {
+    translations <- args[4]
+  }
   
   for (i in unique(seqs)){
     if (!i %in% unique(unlist(the_db$Accession_id))){
@@ -131,8 +139,7 @@ find_names_and_frames <- function(list_file = "list.csv",
       the_end <- the_list[the_list$Acc == i,]$Stop
     }
     
-    #print(the_list)
-    if (the_list[the_list$Acc == i,]$FS != 0 ){
+    if (the_list[the_list$Acc == i,]$FS != 0 & translations != "none"){
       the_read <- substr(the_read, the_start, the_end)
       #print(the_list[the_list$Acc == i,])
       cat(paste("Found a frameshift in", i, "of", the_list[the_list$Acc == i,]$FS, "at", the_list[the_list$Acc == i,]$FS_position, "\n"))

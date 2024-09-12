@@ -55,7 +55,7 @@ if [ "$2" == "nucl" ]; then
     fi
 
     # Generates alignment fasta
-    Rscript bin/find_names_and_frames.R $3 nucleotide_list.csv $4
+    Rscript bin/find_names_and_frames.R $3 nucleotide_list.csv $4 $5
 
     if [ "$5" == "translate" ]; then
         echo "Converting nucleotides to amino acids..."
