@@ -1,0 +1,3 @@
+>hairpin_test.txt
+AUGCCGUUCGUCGUGGCUUCAAAAUCCGAGGUAUCCUCGGAUUUUGAAGCCACGACGAACGGCAU
+(((((((((((((((((((((((((((((((...))))))))))))))))))))))))))))))) (-59.50)

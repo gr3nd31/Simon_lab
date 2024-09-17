@@ -1,0 +1,3 @@
+>hairpin_30
+AGUGUAACUGCACUCGGGGUUCAGCCCGGCUAAGCGCCGGGCUGAACCCCGAGUGCAGUUACACU
+((((((((((((((((((((((((((((((.....))))))))))))))))))))))))))))))
