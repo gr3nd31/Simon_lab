@@ -180,6 +180,8 @@ for iter in range(0, nnum):
     else:
         data = "Name,Complementarity,ApicalSize,ApicalSeq,Bulge,BulgeSize,BulgePosition,BulgeSeq,StemLength,Sequence,Structure,Length,bp,GC,dG,dG_Length,PE,APE\n"
 
+    fc = RNA.fold_compound(hp_seq)
+    fc.pf()
     data+=fasta+"," #Adds a general name
     data+=str(paired_percent)+"," #Adds complementarity score
     data+=str(ap_length)+"," # Adds the size of the apical loop
@@ -190,13 +192,12 @@ for iter in range(0, nnum):
     data+=baseBulge+"," #Adds bulge sequence
     data+=str(hp_length)+"," #Adds the length of hairpin stem
     data+=hp_seq+"," #Adds the primary sequence
-    fc = RNA.fold_compound(hp_seq)
-    data+=fc.pf()[0].replace(",", ".")+"," # Adds the structure sequence in dot-bracket
+    data+=fc.mfe()[0]+"," # Adds the structure sequence in dot-bracket
     data+=str(len(hp_seq))+"," # Adds the total length of the sequence
-    data+=str(fc.pf()[0].count("("))+"," # Adds the number of basepaired bases
+    data+=str(fc.mfe()[0].count("("))+"," # Adds the number of basepaired bases
     data+=str(round((hp_seq.count("G")+hp_seq.count("C"))/len(hp_seq),2))+"," # Adds teh GC content
-    data+=str(round(fc.pf()[1],3))+"," #Adds the MFE
-    data+=str(round(fc.pf()[1]/len(hp_seq),2))+"," # Adds the MFE/length ratio
+    data+=str(round(fc.mfe()[1],3))+"," #Adds the MFE
+    data+=str(round(fc.mfe()[1]/len(hp_seq),2))+"," # Adds the MFE/length ratio
     data+=str(fc.positional_entropy()).replace(",","")+"," #Adds all the PEs
     trick=list(fc.positional_entropy())
     data+=str(sum(trick[1:])/(len(trick)-1))+"\n" #Adds APE

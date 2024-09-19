@@ -53,7 +53,8 @@ for iter in seqs:
     hp_seq=seqs[iter].upper()
     #print(hp_seq)
     fc = RNA.fold_compound(hp_seq)
-    structure = fc.pf()[0].replace(",", ".")
+    fc.pf()
+    structure = fc.mfe()[0].replace(",", ".")
     paired_percent = round(structure.count(".")/len(structure),2)
     #print(paired_percent)
     ap_length = 0
@@ -78,12 +79,12 @@ for iter in seqs:
     data+=baseBulge+"," #Adds bulge sequence
     data+=str(hp_length)+"," #Adds the length of hairpin stem
     data+=hp_seq+"," #Adds the primary sequence
-    data+=fc.pf()[0].replace(",", ".")+"," # Adds the structure sequence in dot-bracket
+    data+='"'+fc.mfe()[0]+'",' # Adds the structure sequence in dot-bracket
     data+=str(len(hp_seq))+"," # Adds the total length of the sequence
     data+=str(fc.pf()[0].count("("))+"," # Adds the number of basepaired bases
     data+=str(round((hp_seq.count("G")+hp_seq.count("C"))/len(hp_seq),2))+"," # Adds the GC content
-    data+=str(round(fc.pf()[1],3))+"," #Adds the MFE
-    data+=str(round(fc.pf()[1]/len(hp_seq),2))+"," # Adds the MFE/length ratio
+    data+=str(round(fc.mfe()[1],3))+"," #Adds the MFE
+    data+=str(round(fc.mfe()[1]/len(hp_seq),2))+"," # Adds the MFE/length ratio
     data+=str(fc.positional_entropy()).replace(",","")+"," #Adds all the PEs
     trick=list(fc.positional_entropy())
     data+=str(sum(trick[1:])/(len(trick)-1))+"\n" #Adds APE
