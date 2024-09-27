@@ -1,0 +1,5 @@
+rna = "UUUAUGCUUAGUGAACUUGGCAUUAAGCAUGAA"
+dotBra = ".((((((((((((.......))))))))))))."
+
+for i in dotBra:
+

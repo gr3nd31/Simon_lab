@@ -3,6 +3,42 @@ import random
 import RNA
 import os
 
+
+def get_pairs(dotBra, rna):
+    braDot = dotBra[::-1]
+
+    hitsLib = {'GC':0,
+               'AU':0,
+               'GU':0,
+                'other':[]}
+    if len(dotBra) != len(rna):
+        print("Sequences are not the same length. Aborting.")
+    elif dotBra.count('(') != dotBra.count(')'):
+        print("Structure pair is not closed. Aborting.")
+    else:
+        hits = 0
+        for i in range(0,len(dotBra)):
+            if dotBra[i] == "(":
+                hits += 1
+                stih = 0
+                for j in range(0,len(braDot)):
+                    if braDot[j] == ')':
+                        stih += 1
+
+                    if stih == hits:
+                        pair = rna[i]+rna[::-1][j]
+                        break
+
+                if pair in hitsLib.keys():
+                    hitsLib[pair]+=1
+                elif pair[::-1] in hitsLib.keys():
+                    hitsLib[pair[::-1]]+=1
+                else:
+                    hitsLib['other'].append(pair)
+    return hitsLib
+
+
+
 parser = argparse.ArgumentParser()
 parser.add_argument("-n", "--numberOfIterations", help="Number of time to generate the hairpin")
 parser.add_argument("-s", "--sequence", help = "Path to the sequence file. If blank, a random hairpin is generated") #
@@ -178,10 +214,13 @@ for iter in range(0, nnum):
     if os.path.isfile(outFile):
         data = ""
     else:
-        data = "Name,Complementarity,ApicalSize,ApicalSeq,Bulge,BulgeSize,BulgePosition,BulgeSeq,StemLength,Sequence,Structure,Length,bp,GC,dG,dG_Length,PE,APE\n"
+        data = "Name,Complementarity,ApicalSize,ApicalSeq,Bulge,BulgeSize,BulgePosition,BulgeSeq,StemLength,Sequence,Structure,Length,bp,GC,dG,dG_Length,PE,APE,GC_pairs,AU_pairs,GU_pairs,GC_pair_percent,AU_pair_percent,GU_pair_percent\n"
 
     fc = RNA.fold_compound(hp_seq)
     fc.pf()
+    
+    pairs = get_pairs(fc.mfe()[0], hp_seq)
+
     data+=fasta+"," #Adds a general name
     data+=str(paired_percent)+"," #Adds complementarity score
     data+=str(ap_length)+"," # Adds the size of the apical loop
@@ -200,7 +239,17 @@ for iter in range(0, nnum):
     data+=str(round(fc.mfe()[1]/len(hp_seq),2))+"," # Adds the MFE/length ratio
     data+=str(fc.positional_entropy()).replace(",","")+"," #Adds all the PEs
     trick=list(fc.positional_entropy())
-    data+=str(sum(trick[1:])/(len(trick)-1))+"\n" #Adds APE
+    data+=str(sum(trick[1:])/(len(trick)-1))+"," #Adds APE
+    data+=str(pairs['GC'])+"," #Adds number of GC pairings
+    data+=str(pairs['AU'])+"," #Adds number of AU pairings
+    data+=str(pairs['GU'])+"," #Adds number of GU pairings
+    if fc.mfe()[0].count("(") > 0:
+        pair_count = fc.mfe()[0].count("(")
+    else:
+        pair_count = 1
+    data+=str(pairs['GC']/pair_count)+"," #Adds percent of GC pairings
+    data+=str(pairs['AU']/pair_count)+"," #Adds percent of AU pairings
+    data+=str(pairs['GU']/pair_count)+"\n" #Adds percent of GU pairings
 
     with open(outFile, 'a') as f:
         f.write(data)

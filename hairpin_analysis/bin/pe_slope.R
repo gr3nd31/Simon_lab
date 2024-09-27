@@ -1,8 +1,15 @@
 suppressPackageStartupMessages(library(tidyverse))
 
-pe_slope <- function(df = datum){
+pe_slope <- function(df = datum,
+                     base_count = 30,
+                     make_graphs = F){
+  df$bp_percent <- 2*df$bp/df$Length
   df$pe_slope <- 0
-  df$pe_intecept <- 0
+  df$basal_pe_slope <- 0
+  df$basal_pe_intercept <- 0
+  df$apical_pe_slope <- 0
+  df$apical_pe_intercept <- 0
+  df$pe_intercept <- 0
   df$compressed_percent <- 0
   df$GC_compressed_percent <- 0
   df$AU_compressed_percent <- 0
@@ -21,6 +28,23 @@ pe_slope <- function(df = datum){
     pe_slope <- lm(PE~relative_Position, data = interim)
     df[i,]$pe_slope <- pe_slope$coefficients[2]
     df[i,]$pe_intercept <- pe_slope$coefficients[1]
+    
+    pe_slope <- lm(PE~relative_Position, data = interim[interim$relative_Position <= base_count,])
+    df[i,]$basal_pe_slope <- pe_slope$coefficients[2]
+    df[i,]$basal_pe_intercept <- pe_slope$coefficients[1]
+    
+    pe_slope <- lm(PE~relative_Position, data = interim[interim$relative_Position >= (max(interim$relative_Position)-base_count),])
+    df[i,]$apical_pe_slope <- pe_slope$coefficients[2]
+    df[i,]$apical_pe_intercept <- pe_slope$coefficients[1]
+    
+    if (make_graphs){
+      draft <- ggplot(data = interim, aes(x = relative_Position, y = PE))+
+        geom_point()+
+        geom_smooth(method = "lm")+
+        theme_bw()
+      print(draft)
+      ggsave(paste0(str_replace_all(df[i,]$Name, ">", ""),".png"), dpi = 300)
+    }
     
     the_string <- df[i,]$Sequence
     the_string <- str_replace_all(the_string, "C+", "C")
