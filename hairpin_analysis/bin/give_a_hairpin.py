@@ -1,12 +1,14 @@
 import argparse
 import RNA
 import os
+import re
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-s", "--sequence", help = "Path to the sequence file. If blank, a random hairpin is generated") #
 parser.add_argument("-o", "--out", help="Name of output file") #
 parser.parse_args()
 args = parser.parse_args()
+
 
 def get_pairs(dotBra, rna):
     braDot = dotBra[::-1]
@@ -41,6 +43,15 @@ def get_pairs(dotBra, rna):
                     hitsLib['other'].append(pair)
     return hitsLib
 
+def bulge_count(dotBra):
+    b_c = {"apicals": 0,
+           "l_bulges": 0,
+           "r_bulges": 0}
+    b_c["apicals"] = len(re.findall(dotBra, "\\(\\.+\\)"))
+    b_c["l_bulges"] = len(re.findall(dotBra, "\\(\\.+\\("))
+    b_c["r_bulges"] = len(re.findall(dotBra, "\\)\\.+\\)"))
+    return b_c
+    
 # Names the output file
 if args.out:
     outFile = args.out
@@ -89,6 +100,7 @@ for iter in seqs:
     fc.pf()
 
     pairs = get_pairs(fc.mfe()[0], hp_seq)
+    bulge_counts = bulge_count(fc.mfe()[0])
 
     structure = fc.mfe()[0].replace(",", ".")
     paired_percent = round(structure.count(".")/len(structure),2)
@@ -103,7 +115,7 @@ for iter in seqs:
     if os.path.isfile(outFile):
         data = ""
     else:
-        data = "Name,Complementarity,ApicalSize,ApicalSeq,Bulge,BulgeSize,BulgePosition,BulgeSeq,StemLength,Sequence,Structure,Length,bp,GC,dG,dG_Length,PE,APE,GC_pairs,AU_pairs,GU_pairs,GC_pair_percent,AU_pair_percent,GU_pair_percent\n"
+        data = "Name,Complementarity,ApicalSize,ApicalSeq,Bulge,BulgeSize,BulgePosition,BulgeSeq,StemLength,Sequence,Structure,Length,bp,GC,dG,dG_Length,PE,APE,GC_pairs,AU_pairs,GU_pairs,GC_pair_percent,AU_pair_percent,GU_pair_percent,apicals,left_bulges,right_bulges\n"
 
     data+=iter.replace("<", "")+"," #Adds a general name
     data+=str(paired_percent)+"," #Adds complementarity score
@@ -133,7 +145,10 @@ for iter in seqs:
         pair_count = 1
     data+=str(pairs['GC']/pair_count)+"," #Adds percent of GC pairings
     data+=str(pairs['AU']/pair_count)+"," #Adds percent of AU pairings
-    data+=str(pairs['GU']/pair_count)+"\n" #Adds percent of GU pairings
+    data+=str(pairs['GU']/pair_count)+"," #Adds percent of GU pairings
+    data+=str(bulge_counts["apicals"])+"," #Adds the number of apical loops
+    data+=str(bulge_counts["l_bulges"])+"," #Adds the number of 5 prime bulges
+    data+=str(bulge_counts["r_bulges"])+"\n" #Adds the number of 3 prime bulges
 
     with open(outFile, 'a') as f:
         f.write(data)
