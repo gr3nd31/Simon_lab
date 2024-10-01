@@ -2,6 +2,7 @@ import argparse
 import random
 import RNA
 import os
+import re
 
 
 def get_pairs(dotBra, rna):
@@ -46,8 +47,6 @@ def bulge_count(dotBra):
     b_c["r_bulges"] = len(re.findall(dotBra, "\\)\\.+\\)"))
     return b_c
 
-
-
 parser = argparse.ArgumentParser()
 parser.add_argument("-n", "--numberOfIterations", help="Number of time to generate the hairpin")
 parser.add_argument("-s", "--sequence", help = "Path to the sequence file. If blank, a random hairpin is generated") #
@@ -69,10 +68,17 @@ else:
 
 # Pulls a target sequence
 if args.sequence:
-    seq_file = open(args.sequence, "r")
-    sequence = seq_file.read().strip()
-    seq_file.close()
-    fasta = "hairpin_"+args.sequence
+    try:
+        seq_file = open(args.sequence, "r")
+        sequence = seq_file.read().strip()
+        sequence = sequence.upper().replace(" ", "")
+        sequence = sequence.replace("T", "U")
+        seq_file.close()
+        fasta = "hairpin_"+args.sequence
+    except:
+        print("Unable to read sequence file. Continuing without a sequence.")
+        sequence = ""
+        fasta = "hairpin_"+str(hp_length)
 else:
     sequence = ""
     fasta = "hairpin_"+str(hp_length)

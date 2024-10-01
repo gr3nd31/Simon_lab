@@ -1,7 +1,7 @@
 import argparse
 
 seqs_fil = "sequences.fasta"
-codon_table = table = {
+codon_table = {
         'ATA':'I', 'ATC':'I', 'ATT':'I', 'ATG':'M',
         'ACA':'T', 'ACC':'T', 'ACG':'T', 'ACT':'T',
         'AAC':'N', 'AAT':'N', 'AAA':'K', 'AAG':'K',
