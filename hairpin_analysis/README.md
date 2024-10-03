@@ -5,7 +5,7 @@
 + Randomly generate new hairpins with certain parameters, and record the thermodynamic properties of these hairpins (**make_a_hairpin.py**)
 + Take a FASTA file of sequences and return the ViennaRNA folded structures and thermodynamic properties (**give_a_hairpin.py**: `python give_a_hairpin.py -s SEQUENCES.fasta`)
 + Search a larger dotbracket structure and sequence for a substructure and return the RNA sequence(s) that correspond to that sequence in a FASTA format (**find_a_hairpon.py**: `python give_a_hairpin.py -s SEQUENCE.fasta -d DOTBRACKET.txt`)
-+ Take a given sequence and mutate the sequence to generate alternative RNA sequences (and maintain coding) with differing thermodynamic properties (**mutate_a_hairpon.py**: **NOT CURRENTLY FUNCTIONAL**)
++ Take a given sequence and mutate the sequence to generate alternative RNA sequences (and maintain coding) with differing thermodynamic properties (**mutate_a_hairpon.py**: `python mutate_a_hairpin.py -s ORIGINAHAIRPIN.txt -c STARTING_BASE_NUMBER -n NUMBER_OF_ITERATIONS`)
 
 Additionally, there are 2 R scripts to assist in analyses:
 
