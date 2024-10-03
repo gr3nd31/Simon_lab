@@ -1,198 +1,193 @@
 import argparse
-import RNA
-import os
-import re
+import random
 
 parser = argparse.ArgumentParser()
-parser.add_argument("-s", "--sequence", help = "Path to the sequence file. If blank, a random hairpin is generated") #
-parser.add_argument('-k' "--keepCoding", help= "Keep coding sequence the same. Should be an integer indicating the position where coding begins. Default is 0 (first base)")
+parser.add_argument("-s", "--sequence", help = "Path to the sequence file.") #
+parser.add_argument('-p', '--percentDifferent', help="Percent (0-1) of possible differences that should be made. Default = 0.5")
+parser.add_argument('-c' '--coding', help= "Keep coding sequence the same. Should be an integer indicating the position where coding begins. Default is 0 (first base)")
 parser.add_argument('-e', '--endCoding', help= "Position to end the coding on.")
 parser.add_argument('-n', '--numberOfIterations', help="Number of iterations to make. Default is 100.")
 parser.add_argument("-o", "--out", help="Name of output file") #
 parser.parse_args()
 args = parser.parse_args()
+runIt = True
 
 codon_table = {
-        'ATA':'I', 'ATC':'I', 'ATT':'I', 'ATG':'M',
-        'ACA':'T', 'ACC':'T', 'ACG':'T', 'ACT':'T',
-        'AAC':'N', 'AAT':'N', 'AAA':'K', 'AAG':'K',
-        'AGC':'S', 'AGT':'S', 'AGA':'R', 'AGG':'R',
-        'CTA':'L', 'CTC':'L', 'CTG':'L', 'CTT':'L',
-        'CCA':'P', 'CCC':'P', 'CCG':'P', 'CCT':'P',
-        'CAC':'H', 'CAT':'H', 'CAA':'Q', 'CAG':'Q',
-        'CGA':'R', 'CGC':'R', 'CGG':'R', 'CGT':'R',
-        'GTA':'V', 'GTC':'V', 'GTG':'V', 'GTT':'V',
-        'GCA':'A', 'GCC':'A', 'GCG':'A', 'GCT':'A',
-        'GAC':'D', 'GAT':'D', 'GAA':'E', 'GAG':'E',
-        'GGA':'G', 'GGC':'G', 'GGG':'G', 'GGT':'G',
-        'TCA':'S', 'TCC':'S', 'TCG':'S', 'TCT':'S',
-        'TTC':'F', 'TTT':'F', 'TTA':'L', 'TTG':'L',
-        'TAC':'Y', 'TAT':'Y', 'TAA':'_', 'TAG':'_',
-        'TGC':'C', 'TGT':'C', 'TGA':'_', 'TGG':'W',
+        'AUA':'I', 'AUC':'I', 'AUU':'I', 'AUG':'M',
+        'ACA':'T', 'ACC':'T', 'ACG':'T', 'ACU':'T',
+        'AAC':'N', 'AAU':'N', 'AAA':'K', 'AAG':'K',
+        'AGC':'S', 'AGU':'S', 'AGA':'R', 'AGG':'R',
+        'CUA':'L', 'CUC':'L', 'CUG':'L', 'CUU':'L',
+        'CCA':'P', 'CCC':'P', 'CCG':'P', 'CCU':'P',
+        'CAC':'H', 'CAU':'H', 'CAA':'Q', 'CAG':'Q',
+        'CGA':'R', 'CGC':'R', 'CGG':'R', 'CGU':'R',
+        'GUA':'V', 'GUC':'V', 'GUG':'V', 'GUU':'V',
+        'GCA':'A', 'GCC':'A', 'GCG':'A', 'GCU':'A',
+        'GAC':'D', 'GAU':'D', 'GAA':'E', 'GAG':'E',
+        'GGA':'G', 'GGC':'G', 'GGG':'G', 'GGU':'G',
+        'UCA':'S', 'UCC':'S', 'UCG':'S', 'UCU':'S',
+        'UUC':'F', 'UUU':'F', 'UUA':'L', 'UUG':'L',
+        'UAC':'Y', 'UAU':'Y', 'UAA':'_', 'UAG':'_',
+        'UGC':'C', 'UGU':'C', 'UGA':'_', 'UGG':'W',
         }
 
-def get_pairs(dotBra, rna):
-    braDot = dotBra[::-1]
+nt_table = ["U", "G", "C", "A"]
 
-    hitsLib = {'GC':0,
-               'AU':0,
-               'GU':0,
-                'other':[]}
-    if len(dotBra) != len(rna):
-        print("Sequences are not the same length. Aborting.")
-    elif dotBra.count('(') != dotBra.count(')'):
-        print("Structure pair is not closed. Aborting.")
-    else:
-        hits = 0
-        for i in range(0,len(dotBra)):
-            if dotBra[i] == "(":
-                hits += 1
-                stih = 0
-                for j in range(0,len(braDot)):
-                    if braDot[j] == ')':
-                        stih += 1
+def mutate_hp(seq, table, percent, globalSeq, offset):
 
-                    if stih == hits:
-                        pair = rna[i]+rna[::-1][j]
-                        break
+    if table == "aa":
+        
+        # iterate through the sequence 3 at a time
+        for i in range(offset,len(seq)*3, 3):
+            print()
+            #If the position is
+            if i-offset in changes:
+                print(globalSeq[i])
+                
+                
+                stim+="7"
+            else:
+                stim+=globalSeq[i+offset:i+3+offset]
+                #print(stim)
+        seq = stim
+            
 
-                if pair in hitsLib.keys():
-                    hitsLib[pair]+=1
-                elif pair[::-1] in hitsLib.keys():
-                    hitsLib[pair[::-1]]+=1
-                else:
-                    hitsLib['other'].append(pair)
-    return hitsLib
 
-def bulge_count(dotBra):
-    b_c = {"apicals": 0,
-           "l_bulges": 0,
-           "r_bulges": 0}
-    b_c["apicals"] = len(re.findall(dotBra, "\\(\\.+\\)"))
-    b_c["l_bulges"] = len(re.findall(dotBra, "\\(\\.+\\("))
-    b_c["r_bulges"] = len(re.findall(dotBra, "\\)\\.+\\)"))
-    return b_c
-    
-def mutate_hp(rna, keepCoding):
-    prime5 = rna[0:frame_number]
+# Pulls a target sequence
+if args.sequence:
+    try:
+        seq_file = open(args.sequence, "r")
+        sequence = seq_file.read().strip()
+        sequence = sequence.upper().replace(" ", "")
+        sequence = sequence.replace("T", "U")
+        seq_file.close()
+        fasta = "hairpin_"+args.sequence
+    except:
+        print("Unable to read sequence file. Abortin.")
+        sequence = ""
+        fasta = "hairpin_"+str(hp_length)
+        runIt = False
+else:
+    sequence = ""
+    fasta = "hairpin_"+str(hp_length)
+    runIt = False
 
 # Names the output file
 if args.out:
     outFile = args.out
 else:
-    outFile = "data.csv"
+    outFile = "Mutated_"+args.sequence
 
-if args.keepCoding:
+if args.c__coding:
     keeping = True
     try:
-        frame_number = int(args.keepCoding)-1
+        frame_number = int(args.c__coding)-1
     except:
-        print("Integer position not given. Beginning coding from the first base.")
-        frame_number = 0
+        print("Integer position not parseable. Beginning coding from the first base.")
+        frame_number = 1
 else:
     keeping = False
+    frame_number = 0
+
+if args.endCoding and keeping:
+    try:
+        final_number = int(args.endCoding)
+    except:
+        print("Final position not parseable. Ending coding at the last codon.")
+        final_number = len(sequence)
+else:
+    final_number = len(sequence)
 
 if args.numberOfIterations:
     try:
         numberOfIterations = int(args.numberOfIterations)
     except:
+        print("Unable to parse iterations number, defaulting to 100")
         numberOfIterations = 100
 else:
     numberOfIterations = 100
 
-def read_fasta(fastafile):
-    """
-    Reads a fasta file and returns a dictionary with sequence
-    number as keys and sequence code as values
-    """
-    sequences = []
-    with open(fastafile, "r") as f:
-        ls = f.readlines()
-        for i in ls:
-             sequences.append(i.rstrip("\n"))
+if args.percentDifferent:
+    try:
+        percentDiff = float(args.percentDifferent)
+    except:
+        print("Unable to parse given percent difference, defaulting to 50% (0.5)")
+        percentDiff = 0.5
+else:
+    percentDiff = 0.5
 
-    seq_id = []
-    for i in sequences:
-        if i[0] == ">":
-            seq_id.append(i)
+up_seq=sequence[0:frame_number]
+down_seq=sequence[final_number:len(sequence)]
 
-    seq_id_index = []
-    for i in range(len(seq_id)):
-        seq_id_index.append(sequences.index(seq_id[i]))
-
-    seq_dic = {}
-    for i in range(len(seq_id_index)):
-        if i == (len(seq_id_index) - 1):
-            seq_dic[seq_id[i]] = sequences[seq_id_index[i]+1:]
+if keeping:
+    new_seq = ""
+    for i in range(0,len(sequence), 3):
+        target_seq = sequence[frame_number:final_number][i:i+3]
+        if len(target_seq) == 3:
+            new_seq+=codon_table[target_seq]
         else:
-            seq_dic[seq_id[i]] = sequences[seq_id_index[i]+1:seq_id_index[i+1]]
+            down_seq=target_seq+down_seq
+    the_seq = new_seq
+else:
+    the_seq = sequence
 
-    seq_dic_2 = {}
-    for keys, values in seq_dic.items():
-        seq_dic_2[keys] = "".join(values)
-
-    return seq_dic_2
-
-seqs = read_fasta(args.sequence)
-for iter in seqs:
-    #print(iter)
-    hp_seq=seqs[iter].upper()
-
-    
-    #print(hp_seq)
-    fc = RNA.fold_compound(hp_seq)
-    fc.pf()
-
-    pairs = get_pairs(fc.mfe()[0], hp_seq)
-    bulge_counts = bulge_count(fc.mfe()[0])
-
-    structure = fc.mfe()[0].replace(",", ".")
-    paired_percent = round(structure.count(".")/len(structure),2)
-    #print(paired_percent)
-    ap_length = 0
-    ap_seq = ""
-    codpiece = "None"
-    baseBulge = ""
-    where_the_b = "0.5"
-    hp_length = structure.count("(")
-
-    if os.path.isfile(outFile):
-        data = ""
+if runIt:
+    finalOut = ">"+fasta.replace(".txt", "")+"_"+"Original\n"+sequence+"\n"
+    # Calculate the number of changes to be made
+    requestedChanges = round(percentDiff*len(the_seq))
+    if requestedChanges == 0:
+        print("Requested changes is 0. Moving to 1.")
+        requestedChanges+=1
     else:
-        data = "Name,Complementarity,ApicalSize,ApicalSeq,Bulge,BulgeSize,BulgePosition,BulgeSeq,StemLength,Sequence,Structure,Length,bp,GC,dG,dG_Length,PE,APE,GC_pairs,AU_pairs,GU_pairs,GC_pair_percent,AU_pair_percent,GU_pair_percent,apicals,left_bulges,right_bulges\n"
+        print("Making "+str(requestedChanges)+" changes...")
 
-    data+=iter.replace("<", "")+"," #Adds a general name
-    data+=str(paired_percent)+"," #Adds complementarity score
-    data+=str(ap_length)+"," # Adds the size of the apical loop
-    data+=ap_seq+"," # Adds the apical sequence
-    data+=codpiece+"," #Adds the bulge type
-    data+=str(len(baseBulge))+"," #Adds Bulge size
-    data+=where_the_b+"," #Add Bugle position
-    data+=baseBulge+"," #Adds bulge sequence
-    data+=str(hp_length)+"," #Adds the length of hairpin stem
-    data+=hp_seq+"," #Adds the primary sequence
-    data+='"'+fc.mfe()[0]+'",' # Adds the structure sequence in dot-bracket
-    data+=str(len(hp_seq))+"," # Adds the total length of the sequence
-    data+=str(fc.pf()[0].count("("))+"," # Adds the number of basepaired bases
-    data+=str(round((hp_seq.count("G")+hp_seq.count("C"))/len(hp_seq),2))+"," # Adds the GC content
-    data+=str(round(fc.mfe()[1],3))+"," #Adds the MFE
-    data+=str(round(fc.mfe()[1]/len(hp_seq),2))+"," # Adds the MFE/length ratio
-    data+=str(fc.positional_entropy()).replace(",","")+"," #Adds all the PEs
-    trick=list(fc.positional_entropy())
-    data+=str(sum(trick[1:])/(len(trick)-1))+"," #Adds APE
-    data+=str(pairs['GC'])+"," #Adds number of GC pairings
-    data+=str(pairs['AU'])+"," #Adds number of AU pairings
-    data+=str(pairs['GU'])+"," #Adds number of GU pairings
-    if fc.mfe()[0].count("(") > 0:
-        pair_count = fc.mfe()[0].count("(")
-    else:
-        pair_count = 1
-    data+=str(pairs['GC']/pair_count)+"," #Adds percent of GC pairings
-    data+=str(pairs['AU']/pair_count)+"," #Adds percent of AU pairings
-    data+=str(pairs['GU']/pair_count)+"," #Adds percent of GU pairings
-    data+=str(bulge_counts["apicals"])+"," #Adds the number of apical loops
-    data+=str(bulge_counts["l_bulges"])+"," #Adds the number of 5 prime bulges
-    data+=str(bulge_counts["r_bulges"])+"\n" #Adds the number of 3 prime bulges
+    # Iterate through the number of iterations requested
+    for i in range(0, numberOfIterations):
+        iter_seq = the_seq
 
-    with open(outFile, 'a') as f:
-        f.write(data)
+        # Append a sequence name
+        finalOut+=">"+fasta.replace(".txt", "")+"_"+str(i+1)+"\n"
+
+        # Mutates codons
+        if keeping:
+            attempts = 0
+            changes = []
+            while len(changes) < requestedChanges and attempts <= 100:
+                hit = random.sample(range(0, len(iter_seq)), 1)[0]
+                if hit*3 not in changes:
+                    possibleCodons = [j for j in codon_table if codon_table[j] == iter_seq[hit]]
+                    if len(possibleCodons) > 1:
+                        changes.append(hit*3)
+                        #print("Mutating "+iter_seq[hit]+" at position "+str(hit))
+                    else:
+                        if attempts == 99:
+                            print("Passed 100 attempts to mutate hairpin with coding. Try decreasing the requested number of changes.")
+                        attempts+=1
+           
+            finalOut+=up_seq
+            stim = sequence[len(up_seq):len(sequence)-len(down_seq)]
+            for k in range(0,len(stim),3):
+                if k in changes:
+                    possibleCodons = [j for j in codon_table if codon_table[j] == iter_seq[int(k/3)]]
+                    trip = stim[k:k+3]
+                    while trip == stim[k:k+3]:
+                        trip = random.choice(possibleCodons)
+                    finalOut+=trip
+                else:
+                    finalOut+=stim[k:k+3]
+            finalOut+=down_seq+"\n"
+
+        # Mutates bases
+        else:
+            changes = random.sample(range(0, len(sequence)), requestedChanges)
+            for i in changes:
+                hit = iter_seq[i]
+                new = iter_seq[i]
+                while new == hit:
+                    new = random.choice(nt_table)
+                stim = list(iter_seq)
+                stim[i] = new
+                iter_seq = "".join(stim)
+            finalOut+=iter_seq+"\n"
+with open(outFile, 'a') as f:
+    f.write(finalOut)
