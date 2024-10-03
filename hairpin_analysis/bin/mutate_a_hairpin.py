@@ -61,11 +61,11 @@ if args.sequence:
         sequence = sequence.upper().replace(" ", "")
         sequence = sequence.replace("T", "U")
         seq_file.close()
-        fasta = "hairpin_"+args.sequence
+        fasta = args.sequence
     except:
         print("Unable to read sequence file. Abortin.")
         sequence = ""
-        fasta = "hairpin_"+str(hp_length)
+        fasta = str(hp_length)
         runIt = False
 else:
     sequence = ""
@@ -146,7 +146,7 @@ if runIt:
         iter_seq = the_seq
 
         # Append a sequence name
-        finalOut+=">"+fasta.replace(".txt", "")+"_"+str(i+1)+"\n"
+        finalOut+=">"+fasta.replace(".txt", "")+"_"+str(requestedChanges)+"-changes"+"_"+str(i+1)+"\n"
 
         # Mutates codons
         if keeping:
