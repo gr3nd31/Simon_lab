@@ -13,6 +13,11 @@ if (length(args) == 0){
 datum <- read_csv(args[1], show_col_types = F)
 the_name <- str_replace(args[1], ".csv", "_")
 
+if (nrow(datum) > nrow(datum[str_count(datum$Structure, "\\(") > 3,])){
+  cat("Detected sequences with less than 3 basepairs. These are being trimmed")
+  datum <- datum[str_count(datum$Structure, "\\(")>= 3,]
+}
+
 m = lm(dG~Length, data = datum)[[1]][2]
 b = lm(dG~Length, data = datum)[[1]][1]
 

@@ -6,11 +6,13 @@ parser.add_argument("-s", "--sequence", help = "Path to the sequence file.") #
 parser.add_argument('-p', '--percentDifferent', help="Percent (0-1) of possible differences that should be made. Default = 0.5")
 parser.add_argument('-c' '--coding', help= "Keep coding sequence the same. Should be an integer indicating the position where coding begins. Default is 0 (first base)")
 parser.add_argument('-e', '--endCoding', help= "Position to end the coding on.")
+parser.add_argument('-u', '--usageTable', help = 'Path to codon usage table')
 parser.add_argument('-n', '--numberOfIterations', help="Number of iterations to make. Default is 100.")
 parser.add_argument("-o", "--out", help="Name of output file") #
 parser.parse_args()
 args = parser.parse_args()
 runIt = True
+caring = False
 
 codon_table = {
         'AUA':'I', 'AUC':'I', 'AUU':'I', 'AUG':'M',
@@ -33,26 +35,6 @@ codon_table = {
 
 nt_table = ["U", "G", "C", "A"]
 
-def mutate_hp(seq, table, percent, globalSeq, offset):
-
-    if table == "aa":
-        
-        # iterate through the sequence 3 at a time
-        for i in range(offset,len(seq)*3, 3):
-            print()
-            #If the position is
-            if i-offset in changes:
-                print(globalSeq[i])
-                
-                
-                stim+="7"
-            else:
-                stim+=globalSeq[i+offset:i+3+offset]
-                #print(stim)
-        seq = stim
-            
-
-
 # Pulls a target sequence
 if args.sequence:
     try:
@@ -71,6 +53,20 @@ else:
     sequence = ""
     fasta = "hairpin_"+str(hp_length)
     runIt = False
+
+if args.usageTable:
+    try:
+        seq_file = open(args.usageTable, "r")
+        cTable = seq_file.read().strip()
+        cTable = cTable.replace("T", "U"),
+        tabs = cTable[0].splitlines()
+        usageTable = {}
+        for i in tabs:
+            usageTable[i.split(" ")[0]] = float(i.split(" ")[1])
+        caring = True
+        seq_file.close()
+    except:
+        print("Unable to parse codon table. Mutating without caring.")
 
 # Names the output file
 if args.out:
@@ -131,6 +127,7 @@ if keeping:
 else:
     the_seq = sequence
 
+
 if runIt:
     finalOut = ">"+fasta.replace(".txt", "")+"_"+"Original\n"+sequence+"\n"
     # Calculate the number of changes to be made
@@ -158,7 +155,6 @@ if runIt:
                     possibleCodons = [j for j in codon_table if codon_table[j] == iter_seq[hit]]
                     if len(possibleCodons) > 1:
                         changes.append(hit*3)
-                        #print("Mutating "+iter_seq[hit]+" at position "+str(hit))
                     else:
                         if attempts == 99:
                             print("Passed 100 attempts to mutate hairpin with coding. Try decreasing the requested number of changes.")
@@ -169,9 +165,31 @@ if runIt:
             for k in range(0,len(stim),3):
                 if k in changes:
                     possibleCodons = [j for j in codon_table if codon_table[j] == iter_seq[int(k/3)]]
+                    # sorts codons by usage
+                    if caring:
+                        usage = []
+                        summation = 0
+                        for u in possibleCodons:
+                            summation += usageTable[u]
+                        for u in possibleCodons:
+                            usage.append((u, usageTable[u]/summation))
+                        usage.sort(key=lambda tup: tup[1])
+                        tack = 0
+                        for u in range(0,len(usage)):
+                            the_hit = usage[u][0]
+                            the_num = usage[u][1]+tack
+                            usage[u]=(the_hit, int(the_num*100))
+                            tack=the_num
                     trip = stim[k:k+3]
                     while trip == stim[k:k+3]:
-                        trip = random.choice(possibleCodons)
+                        if caring and len(possibleCodons) > 2:
+                            the_bean = random.randint(1,100)
+                            for u in usage:
+                                if u[1] > the_bean:
+                                    trip = u[0]
+                                    break
+                        else:
+                            trip = random.choice(possibleCodons)
                     finalOut+=trip
                 else:
                     finalOut+=stim[k:k+3]

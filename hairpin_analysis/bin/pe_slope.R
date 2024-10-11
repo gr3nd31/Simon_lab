@@ -3,7 +3,7 @@ suppressPackageStartupMessages(library(tidyverse))
 pe_slope <- function(df = datum,
                      base_count = 30,
                      make_graphs = F){
-  df$bp_percent <- 2*df$bp/df$Length
+  df$bp_percent <- (2*str_count(df$Structure, "\\("))/df$Length
   df$pe_slope <- 0
   df$basal_pe_slope <- 0
   df$basal_pe_intercept <- 0
