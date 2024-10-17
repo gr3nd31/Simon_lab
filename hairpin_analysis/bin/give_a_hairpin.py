@@ -47,9 +47,9 @@ def bulge_count(dotBra):
     b_c = {"apicals": 0,
            "l_bulges": 0,
            "r_bulges": 0}
-    b_c["apicals"] = len(re.findall(dotBra, "\\(\\.+\\)"))
-    b_c["l_bulges"] = len(re.findall(dotBra, "\\(\\.+\\("))
-    b_c["r_bulges"] = len(re.findall(dotBra, "\\)\\.+\\)"))
+    b_c["apicals"] = len(re.findall(dotBra, "\\(+\\.+\\)+"))
+    b_c["l_bulges"] = len(re.findall(dotBra, "\\(+\\.+\\(+"))
+    b_c["r_bulges"] = len(re.findall(dotBra, "\\)+\\.+\\)+"))
     return b_c
 
 def read_fasta(fastafile):

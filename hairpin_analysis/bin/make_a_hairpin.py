@@ -42,10 +42,11 @@ def bulge_count(dotBra):
     b_c = {"apicals": 0,
            "l_bulges": 0,
            "r_bulges": 0}
-    b_c["apicals"] = len(re.findall(dotBra, "\\(\\.+\\)"))
-    b_c["l_bulges"] = len(re.findall(dotBra, "\\(\\.+\\("))
-    b_c["r_bulges"] = len(re.findall(dotBra, "\\)\\.+\\)"))
+    b_c["apicals"] = len(re.findall(dotBra, "\\(+\\.+\\)+"))
+    b_c["l_bulges"] = len(re.findall(dotBra, "\\(+\\.+\\(+"))
+    b_c["r_bulges"] = len(re.findall(dotBra, "\\)+\\.+\\)+"))
     return b_c
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-n", "--numberOfIterations", help="Number of time to generate the hairpin")
