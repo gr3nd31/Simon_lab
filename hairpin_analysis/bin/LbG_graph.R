@@ -1,6 +1,14 @@
 #!/usr/bin/env Rscript
 args = commandArgs(trailingOnly=TRUE)
 
+if (system.file(package = 'ggpubr') == ""){
+  install.packages('ggpubr')
+}
+
+if (system.file(package = 'tidyverse') == ""){
+  install.packages('tidyverse')
+}
+
 suppressPackageStartupMessages(library(tidyverse))
 suppressPackageStartupMessages(library(ggpubr))
 
