@@ -207,5 +207,5 @@ if runIt:
                 stim[i] = new
                 iter_seq = "".join(stim)
             finalOut+=iter_seq+"\n"
-with open(outFile, 'a') as f:
+with open(outFile, 'w') as f:
     f.write(finalOut)
