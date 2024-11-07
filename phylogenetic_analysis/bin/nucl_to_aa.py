@@ -22,11 +22,17 @@ codon_table = {
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-s", "--sequences", help = "Path to the sequences file")
+parser.add_argument("-o", "--outFile", help = "Name of the output file. By default, it is the in-file.")
 parser.parse_args()
 
 args = parser.parse_args()
 if args.sequences:
     seqs_fil = args.sequences
+
+if args.outFile:
+    outFile = args.outFile
+else:
+    outFile = args.sequences
 
 
 def read_fasta(fastafile):
@@ -80,5 +86,5 @@ for i in seqs:
     new_set+="\n"
 
 #print(new_set)
-with open(seqs_fil, 'w') as f:
+with open(outFile, 'w') as f:
         f.write(new_set)
