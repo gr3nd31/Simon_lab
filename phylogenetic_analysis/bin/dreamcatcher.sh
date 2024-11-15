@@ -59,7 +59,7 @@ if [ "$2" == "nucl" ]; then
 
     if [ "$5" == "translate" ]; then
         echo "Converting nucleotides to amino acids..."
-        python3 bin/nucl_to_aa.py -s sequences.fasta
+        python3 bin/nucl_to_aa.py -s sequences.fasta -t $4
         translated=true
     fi
 

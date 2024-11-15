@@ -22,12 +22,18 @@ codon_table = {
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-s", "--sequences", help = "Path to the sequences file")
+parser.add_argument("-t", "--tag", help = "Tag to add to sequence name")
 parser.add_argument("-o", "--outFile", help = "Name of the output file. By default, it is the in-file.")
 parser.parse_args()
 
 args = parser.parse_args()
 if args.sequences:
     seqs_fil = args.sequences
+
+if args.tag:
+    id_tag = " "+args.tag
+else:
+    id_tag = ""
 
 if args.outFile:
     outFile = args.outFile
@@ -72,7 +78,7 @@ seqs = read_fasta(seqs_fil)
 new_set = ""
 for i in seqs:
     #print(seqs[i])
-    new_set=new_set+i+"\n"
+    new_set=new_set+i+id_tag+"\n"
     nner = seqs[i].upper()
     if "U" in nner.upper():
         nner = nner.replace("U", "T")
