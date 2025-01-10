@@ -141,7 +141,7 @@ if seqs != "nope":
             else:
                 data = "Name,Complementarity,ApicalSize,ApicalSeq,Bulge,BulgeSize,BulgePosition,BulgeSeq,StemLength,Sequence,Structure,Length,bp,GC,dG,dG_Length,PE,APE,GC_pairs,AU_pairs,GU_pairs,GC_pair_percent,AU_pair_percent,GU_pair_percent,apicals,left_bulges,right_bulges\n"
             
-            data+=iter.replace("<", "")+"," #Adds a general name
+            data+=iter.replace("<", "").replace(",", "")+"," #Adds a general name and removes any devilish commas
             data+=str(paired_percent)+"," #Adds complementarity score
             data+=str(ap_length)+"," # Adds the size of the apical loop
             data+=ap_seq+"," # Adds the apical sequence
