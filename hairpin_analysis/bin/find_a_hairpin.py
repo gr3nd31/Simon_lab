@@ -2,8 +2,7 @@ import re
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument("-s", "--sequence", help = "Path to the sequence file. If blank, a random hairpin is generated") #
-parser.add_argument("-d", "--dotBracket", help="Name of dotbracketfile") #
+parser.add_argument("-s", "--sequence", help = "Path to the sequence and structure file") #
 parser.add_argument('-m', '--minLength', help="Minimum length a structure should be. Recommended is 11.")
 parser.add_argument('-b', '--bonds', help="Minimum number of pairs required. Default minimum is 3.")
 parser.add_argument('-f', '--find', help="Regular expression for the structure to be found. Default is a simple hairpin 'C+C+[CU]+C+U+G+[GU]+G+G+'")
@@ -16,11 +15,28 @@ runIt = True
 # Pulls a target sequence
 if args.sequence:
     try:
+        # Pulls data from file and splits it
         seq_file = open(args.sequence, "r")
-        sequence = seq_file.read().strip()
-        sequence = sequence.upper().replace(" ", "")
-        sequence = sequence.replace("T", "U")
+        datum = seq_file.read().strip().split("\n")
         seq_file.close()
+        # Pulls sequence data and replaces T's to U's
+        sequence = datum[1].upper().replace(" ", "")
+        sequence = sequence.replace("T", "U")
+
+        #Pulls structure from file and converts to CUG nomenclature
+        structure = datum[2].replace(" ", "")
+        structure = structure.replace(".", "U")
+        structure = structure.replace("(", "C")
+        structure = structure.replace(")", "G")
+
+         # Defines the prefix of the subsequence
+        if args.prefix:
+            prefix = args.prefix
+        else:
+            prefix = datum[0].replace(">", "")
+            prefix = prefix.replace(",", " -")
+            prefix = prefix.replace("_", "-")
+        
     except:
         print("Unable to read sequence file. Aborting.")
         runIt = False
@@ -46,25 +62,6 @@ if args.bonds:
 else:
     minBonds = 3
 
-# Loads in the dot bracket structure and replaceswith more regex friendly notation
-if args.dotBracket:
-    try:
-        str_file = open(args.dotBracket, "r")
-        structure = str_file.read().strip()
-        structure = structure.replace(" ", "")
-        structure = structure.replace(".", "U")
-        structure = structure.replace("(", "C")
-        structure = structure.replace(")", "G")
-        str_file.close()
-    except:
-        print("Unable to read structure file. Aborting.")
-        runIt = False
-        sequence = ""
-else:
-    runIt = False
-    sequence = ""
-    print("Structure file not given. Aborting.")
-
 # Defines the target structure. '.' : 'U', '(' : 'C', ')': 'G'
 if args.find:
     try:
@@ -79,11 +76,6 @@ else:
     print("Target structure not given. Defaulting to a hairpin.")
     target = "C+C+[CU]+C+U+G+[GU]+G+G+"
 
-# Defines the prefix of the subsequence
-if args.prefix:
-    prefix = args.prefix
-else:
-    prefix = "sequence"
 # Defines the name of the out file
 if args.out:
     outFile = args.out
