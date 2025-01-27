@@ -4,7 +4,8 @@ import random
 parser = argparse.ArgumentParser()
 parser.add_argument("-s", "--sequence", help = "Path to the sequence file.") #
 parser.add_argument('-p', '--percentDifferent', help="Percent (0-1) of possible differences that should be made. Default = 0.5")
-parser.add_argument('-c' '--coding', help= "Keep coding sequence the same. Should be an integer indicating the position where coding begins. Default is 0 (first base)")
+parser.add_argument('-R', '--randomizePercentDifferent', help="Randomly select the possible differences with each iteration", action='store_true')
+parser.add_argument('-c', '--coding', help= "Keep coding sequence the same. Should be an integer indicating the position where coding begins. Default is 0 (first base)")
 parser.add_argument('-e', '--endCoding', help= "Position to end the coding on.")
 parser.add_argument('-u', '--usageTable', help = 'Path to codon usage table')
 parser.add_argument('-n', '--numberOfIterations', help="Number of iterations to make. Default is 100.")
@@ -74,10 +75,10 @@ if args.out:
 else:
     outFile = "Mutated_"+args.sequence
 
-if args.c__coding:
+if args.coding:
     keeping = True
     try:
-        frame_number = int(args.c__coding)-1
+        frame_number = int(args.coding)-1
     except:
         print("Integer position not parseable. Beginning coding from the first base.")
         frame_number = 1
@@ -135,12 +136,19 @@ if runIt:
     if requestedChanges == 0:
         print("Requested changes is 0. Moving to 1.")
         requestedChanges+=1
+    elif args.randomizePercentDifferent:
+        print("Randomizing change percent with each iteration.")
     else:
         print("Making "+str(requestedChanges)+" changes...")
 
     # Iterate through the number of iterations requested
     for i in range(0, numberOfIterations):
         iter_seq = the_seq
+        if args.randomizePercentDifferent:
+            percentDiff=random.sample(range(1,100),1)[0]/100
+            requestedChanges = round(percentDiff*len(the_seq))
+            if requestedChanges == 0:
+                requestedChanges+=1
 
         # Append a sequence name
         finalOut+=">"+fasta.replace(".txt", "")+"_"+str(requestedChanges)+"-changes"+"_"+str(i+1)+"\n"
