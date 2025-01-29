@@ -5,7 +5,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-s", "--sequence", help = "Path to the sequence and structure file") #
 parser.add_argument('-m', '--minLength', help="Minimum length a structure should be. Recommended is 11.")
 parser.add_argument('-b', '--bonds', help="Minimum number of pairs required. Default minimum is 3.")
-parser.add_argument('-f', '--find', help="Regular expression for the structure to be found. Default is a simple hairpin 'C+C+[CU]+C+U+G+[GU]+G+G+'")
+parser.add_argument('-f', '--find', help="Regular expression for the structure to be found. Default is a simple hairpin 'C+C+[CU]+C+U+G+[GU]+G+G+'. A YSS would be 'C+[CU]+U+G+[GU]+C+[CU]+G+[GU]+G+'")
 parser.add_argument('-p', '--prefix', help="Prefix to be added to the sequence.")
 parser.add_argument("-o", "--out", help="Name of output file") #
 parser.parse_args()
