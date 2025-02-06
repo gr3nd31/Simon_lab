@@ -127,7 +127,7 @@ if seqs != "nope":
             bulge_counts = bulge_count(fc.mfe()[0])
 
             structure = fc.mfe()[0].replace(",", ".")
-            paired_percent = round(structure.count(".")/len(structure),2)
+            paired_percent = 1-round(structure.count(".")/len(structure),2)
             #print(paired_percent)
             ap_length = 0
             ap_seq = ""
