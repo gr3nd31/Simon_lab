@@ -1,9 +1,9 @@
 #Contains the following functions:
 #-------------
-# granugraph()
+# graph_coverage_map()
 # Analysis of the genome_df.csv file
 #-------------
-#stock_o_late()
+#graph_reads_map()
 # Analysis of the reads_df.csv file
 #-------------
 # pull_ids()
@@ -17,22 +17,22 @@
 # and ending frequency for reads
 #-----------
 
-library(ggpubr)
-library(tidyverse)
-library(plotly)
-library(htmlwidgets)
+suppressPackageStartupMessages(library(ggpubr))
+suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(plotly))
+suppressPackageStartupMessages(library(htmlwidgets))
 
 #-------------------------------
-# granugraph()
+# graph_coverage_map()
 #   Analyzes and summarizes error data and generates plots
 #-------------------------------
-granugraph <- function(file_name="genome_df.csv",
+graph_coverage_map <- function(file_name="genome_df.csv",
                        window_length = 2,
                        graph_them = T,
                        save_them=TRUE,
                        graph_skew = FALSE,
                        prefix=""){
-  datum <- read_csv(file_name)
+  datum <- read_csv(file_name, show_col_types = F)
   if (!"plume_deleted" %in% names(datum) &
       !"plume_mismatched" %in% names(datum) &
       !"plume_inserted" %in% names(datum)){
@@ -58,7 +58,7 @@ granugraph <- function(file_name="genome_df.csv",
     }
     write_csv(datum, file_name)
   } else {
-    print("Granugraph data already detected. Skipping analysis")
+    print("Coverage map data already detected. Skipping analysis")
   }
   
   if (graph_them){
@@ -198,12 +198,12 @@ granugraph <- function(file_name="genome_df.csv",
 }
 
 #-------------------------------
-# stack_o_late()
+# graph_reads_map()
 #  Analyzes read data to annotate multi-alignments and generate
 #  read alignment plots
 #-------------------------------
-stack_o_late <- function(file_name = "reads_df.csv",
-                         subset_num = 0,
+graph_reads_map <- function(file_name = "reads_df.csv",
+                         subset_num = 1000,
                          split_hsps=F,
                          split_strand = F,
                          color_strand = F,
@@ -217,7 +217,7 @@ stack_o_late <- function(file_name = "reads_df.csv",
                          make_widget = F,
                          skip_skips = T){
   # Read the file
-  datum <- read_csv(file_name)
+  datum <- read_csv(file_name, show_col_types = F)
   if (skip_skips){
     datum <- datum[datum$skipped == "FALSE",]
   }
