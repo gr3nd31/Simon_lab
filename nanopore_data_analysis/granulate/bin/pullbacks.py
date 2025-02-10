@@ -52,44 +52,38 @@ def read_fasta(fastafile):
         for i in ls:
              sequences.append(i.rstrip("\n"))
 
-    seq_id = []
-    for i in sequences:
-        if len(i) > 0:
-            if i[0] == ">":
-                seq_id.append(i)
-
-    seq_id_index = []
-    for i in range(len(seq_id)):
-        seq_id_index.append(sequences.index(seq_id[i]))
-
     seq_dic = {}
-    for i in range(len(seq_id_index)):
-        if i == (len(seq_id_index) - 1):
-            seq_dic[seq_id[i]] = sequences[seq_id_index[i]+1:]
-        else:
-            seq_dic[seq_id[i]] = sequences[seq_id_index[i]+1:seq_id_index[i+1]]
-
-    seq_dic_2 = {}
-    for keys, values in seq_dic.items():
-        seq_dic_2[keys] = "".join(values)
-
-    return seq_dic_2
+    dupl=1
+    for i in range(len(sequences)):
+        if len(sequences[i]) > 0 and sequences[i][0] == ">" and len(sequences[i+1]) > 0:
+            if sequences[i] not in seq_dic.keys():
+                seq_id = sequences[i]
+            else:
+                seq_id = sequences[i]+"_duplicate_"+str(dupl)
+                dupl+=1
+            seq_seq = sequences[i+1]
+            seq_dic[seq_id] = seq_seq
+        elif len(sequences[i]) > 0 and sequences[i][0] != ">" and sequences[i-1][0] != ">" :
+            seq_seq += sequences[i]
+            seq_dic[seq_id] = seq_seq
+    if dupl > 1:
+        print("Detected multiple instances of sequences with the same name. Only the first instance will be keep the original name.")
+        
+    return seq_dic
 
 
 fastq_reads = read_fasta(default_fasta_reads)
 
 hits = 0
-hit_reads = ""
 for i in x:
+    hit_reads = ">"+i+"\n"
     if ">"+i in fastq_reads.keys():
         hits+=1
-        hit_reads+=">"+i+"\n"+fastq_reads[">"+i]+"\n"
+        hit_reads+=fastq_reads[">"+i]+"\n"
+        with open(default_out, "a") as f:
+            f.write(hit_reads)
 
 print("\nNumber of reads requested: " + str(len(x)))
 print("Number of reads searched: "+str(len(fastq_reads)))
 trick = hits/len(fastq_reads)
 print("Number of reads found: "+str(hits)+" ("+str(round(100*hits/len(x)))+"%)")
-
-#print(hit_reads)
-with open(default_out, "w") as f:
-    f.write(hit_reads)
