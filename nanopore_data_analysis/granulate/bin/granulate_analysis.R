@@ -319,6 +319,102 @@ graph_reads_map <- function(file_name = "reads_df.csv",
 }
 
 #-------------------------------
+# graph_read_hsps
+#  graphs the position of hspss within each read
+#-------------------------------
+
+graph_read_hsps <- function(file_name = "reads_df.csv",
+                                as_percent = F,
+                                color_by = "start",
+                                save_it = T,
+                                save_as = "read_hsps.png",
+                                subset_data = T,
+                                subset_number = 20,
+                                skips = T,
+                                plotly_it = F){
+  if (typeof(file_name)=="character"){
+    datum <- read_csv(file_name, show_col_types = F)
+  } else if (typeof(file_name)=="list"){
+    datum <- file_name
+  }
+  
+  if (subset_data & typeof(subset_number) == "double"){
+    print("Sampling data...")
+    read_ids <- unique(datum$read_id)
+    read_ids <- sample(read_ids, subset_number)
+    datum <- datum[datum$read_id %in% read_ids,]
+  }
+  if (as_percent){
+    print("Adjusting reads as percent.")
+  }
+  datum <- datum[order(-datum$aligned_length),]
+  y_tick <- 1
+  datum$y1 <- 0
+  for (i in unique(datum$read_id)){
+    datum[datum$read_id == i,]$y1 <- y_tick
+    if(as_percent){
+      datum[datum$read_id == i,]$q_start <- 1+as.integer(100*datum[datum$read_id == i,]$q_start/max(datum[datum$read_id ==i,]$read_length))
+      datum[datum$read_id == i,]$q_end <- as.integer(100*datum[datum$read_id == i,]$q_end/max(datum[datum$read_id ==i,]$read_length))
+    }
+    chicken <- tibble("read_id" = i,
+                      "start" = 1,
+                      "end" = max(datum[datum$read_id == i,]$read_length),
+                      "y1" = y_tick)
+    if (!exists("interim")){
+      interim <- chicken
+    } else {
+      interim <- rbind(interim, chicken)
+    }
+    y_tick <- y_tick + 1
+  }
+  if (as_percent){
+    interim$end <- 100
+  }
+  #interim$y1 <- as.character(interim$y1)
+  #datum$y1 <- as.character(datum$y1)
+  
+  draft <- ggplot()+
+    geom_segment(data = interim, aes(x = start, y = read_id, xend = end, yend = read_id),
+                 color = "darkgray", linewidth = 5, alpha = 1, lineend = "round")
+  if (color_by == "sense"){
+    draft <- draft+
+      geom_segment(data = datum, aes(x = q_start, y = read_id, xend = q_end, yend = read_id, color = h_strand),
+                   linewidth = 4, alpha = 1, lineend = "round")
+  } else if (color_by == "start"){
+    draft <- draft+
+      geom_segment(data = datum, aes(x = q_start, y = read_id, xend = q_end, yend = read_id, color = h_start),
+                   linewidth = 4, alpha = 1, lineend = "round")+
+      scale_color_viridis_b(option = "inferno")
+  } else if (color_by == "end"){
+    draft <- draft+
+      geom_segment(data = datum, aes(x = q_start, y = read_id, xend = q_end, yend = read_id, color = h_end),
+                   linewidth = 4, alpha = 1, lineend = "round")+
+      scale_color_viridis_b(option = "inferno")
+  }
+  draft <- draft+
+    theme_bw()+
+    theme(axis.text.y = element_blank(),
+          panel.grid.major.y = element_blank(), 
+          axis.ticks.y = element_blank(),
+          legend.position = "top")
+  if (as_percent){
+    draft <- draft+
+      labs(x = "Relative Read Position",
+           y = "Read Number")
+  } else {
+    draft <- draft+
+      labs(x = "Read Position",
+           y = "Read Number")
+  }
+  
+  print(draft)
+  x <<- draft
+  if (save_it & nchar(save_as) > 0){
+    ggsave(save_as, dpi = 300)
+  }
+}
+
+#-------------------------------
 # pull_ids
 #  Pulls read_ids from a dataframe
 #-------------------------------
