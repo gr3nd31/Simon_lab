@@ -325,7 +325,7 @@ graph_reads_map <- function(file_name = "reads_df.csv",
 
 graph_read_hsps <- function(file_name = "reads_df.csv",
                                 as_percent = F,
-                                color_by = "sense",
+                                color_by = "number",
                                 save_it = T,
                                 save_as = "read_hsps.png",
                                 subset_data = T,
@@ -352,6 +352,7 @@ graph_read_hsps <- function(file_name = "reads_df.csv",
   # Orders the dataframe and applies levels to the hit strand sense
   datum <- datum[order(-datum$aligned_length),]
   datum$h_strand <- ordered(datum$h_strand, levels = c("Plus", "Minus"))
+  datum$hsps <- as.character(datum$hsps)
   # Creates a second dataframe to record the total read information and assigns the same y-axis number for HSPS within those reads
   y_tick <- 1
   datum$y1 <- 0
@@ -417,13 +418,19 @@ graph_read_hsps <- function(file_name = "reads_df.csv",
                    linewidth = 4, alpha = 1, lineend = "round")+
       scale_color_viridis_b(option = "inferno")+
       labs(color = "Insertion Freq")
-  } else {
-    print("Coloring parameter not recognized. Please try with 'sense', 'start', 'end', 'mismatch', 'deletion', or 'insertion'. Defaulting to 'sense'.")
+  } else if (color_by == "number"){
     draft <- draft+
-      geom_segment(data = datum, aes(x = q_start, y = read_id, xend = q_end, yend = read_id, color = h_strand),
+      geom_segment(data = datum, aes(x = q_start, y = read_id, xend = q_end, yend = read_id, color = hsps),
                    linewidth = 4, alpha = 1, lineend = "round")+
-      scale_color_manual(values = c("orange", "lightblue"))+
-      labs(color = "Alignment Sense")
+      labs(color = "HSPS number")+
+      theme(legend.position = element_blank())
+  } else {
+    print("Coloring parameter not recognized. Please try with 'number', 'sense', 'start', 'end', 'mismatch', 'deletion', or 'insertion'. Defaulting to 'number'.")
+    draft <- draft+
+      geom_segment(data = datum, aes(x = q_start, y = read_id, xend = q_end, yend = read_id, color = hsps),
+                   linewidth = 4, alpha = 1, lineend = "round")+
+      labs(color = "HSPS Number")+
+      theme(legend.position = element_blank())
   }
   draft <- draft+
     theme_bw()+
