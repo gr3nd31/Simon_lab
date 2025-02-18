@@ -343,11 +343,18 @@ graph_read_hsps <- function(file_name = "reads_df.csv",
   if (subset_data & typeof(subset_number) == "double"){
     print("Sampling data...")
     read_ids <- unique(datum$read_id)
-    read_ids <- sample(read_ids, subset_number)
-    datum <- datum[datum$read_id %in% read_ids,]
+    if (length(read_ids) > subset_number){
+      read_ids <- sample(read_ids, subset_number)
+      datum <- datum[datum$read_id %in% read_ids,]
+    } else {
+      print(paste0("Only ", length(read_ids), " reads found but ", subset_number, " requested. Returning total reads."))
+    }
   }
   if (as_percent){
     print("Adjusting reads as percent.")
+  }
+  if (!skips){
+    datum <- datum[datum$skipped == "False",]
   }
   # Orders the dataframe and applies levels to the hit strand sense
   datum <- datum[order(-datum$aligned_length),]
@@ -444,11 +451,11 @@ graph_read_hsps <- function(file_name = "reads_df.csv",
           legend.title = element_text(size = 14))
   if (as_percent){
     draft <- draft+
-      labs(x = "Relative Read Position",
+      labs(x = "Relative Read Position (%)",
            y = "")
   } else {
     draft <- draft+
-      labs(x = "Read Position",
+      labs(x = "Read Position (nt)",
            y = "")
   }
   
