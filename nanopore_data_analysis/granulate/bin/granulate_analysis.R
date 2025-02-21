@@ -256,6 +256,7 @@ graph_reads_map <- function(file_name = "reads_df.csv",
   } else {
     # Orders by negative length in case of graphing
     print("Aggregate aligment length detected. Skipping analysis.")
+    datum <- datum[sample(nrow(datum), subset_num),]
     datum <- datum[order(-datum$aligned_length),]
     datum$a_id <- ordered(-datum$aligned_length)
   }
