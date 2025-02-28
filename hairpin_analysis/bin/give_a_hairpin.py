@@ -6,6 +6,7 @@ import re
 parser = argparse.ArgumentParser()
 parser.add_argument("-s", "--sequence", help = "Path to the sequence file. If blank, a random hairpin is generated") #
 parser.add_argument("-l", "--length", help="Maximum length sequence to be folded")
+parser.add_argument("-R", "--Repeats", help="Flag repeats. Give an integer length to check if sequence is repeated.")
 parser.add_argument("-o", "--out", help="Name of output file") #
 parser.parse_args()
 args = parser.parse_args()
@@ -87,6 +88,19 @@ def read_fasta(fastafile):
 
     return seq_dic_2
 
+# Option to check is a sequence is repeated in the hairpin
+if args.Repeats:
+    try:
+        repWindow=int(args.Repeats)
+        foundRepeat=False
+    except:
+        print("Unable to parse given integer. Defaulting to 5.")
+        repWindow=5
+        foundRepeat=False
+else:
+    repWindow=0
+    foundRepeat=False
+
 # Names the output file
 if args.out:
     outFile = args.out
@@ -120,6 +134,22 @@ if seqs != "nope":
             slices = [hp_seq]
         
         for subSeq in slices:
+
+            tick=""
+            if args.Repeats:
+                tick+=str(repWindow)+"-"
+                foundRepeat=False
+                for i in range(0, len(hp_seq)):
+                    subRep=hp_seq[i:i+repWindow]
+                    if len(subRep) >= repWindow:
+                        p=[match.start() for match in re.finditer(subRep, hp_seq)]
+                        if len(p) > 1:
+                            foundRepeat=True
+                            tick+=str(i+1)+":"
+
+                if len(tick) > 2:
+                    tick=tick[0:len(tick)-1]
+
             fc = RNA.fold_compound(subSeq)
             fc.pf()
 
@@ -139,7 +169,7 @@ if seqs != "nope":
             if os.path.isfile(outFile):
                 data = ""
             else:
-                data = "Name,Complementarity,ApicalSize,ApicalSeq,Bulge,BulgeSize,BulgePosition,BulgeSeq,StemLength,Sequence,Structure,Length,bp,GC,dG,dG_Length,PE,APE,GC_pairs,AU_pairs,GU_pairs,GC_pair_percent,AU_pair_percent,GU_pair_percent,apicals,left_bulges,right_bulges\n"
+                data = "Name,Complementarity,ApicalSize,ApicalSeq,Bulge,BulgeSize,BulgePosition,BulgeSeq,StemLength,Sequence,Structure,Length,bp,GC,dG,dG_Length,PE,APE,GC_pairs,AU_pairs,GU_pairs,GC_pair_percent,AU_pair_percent,GU_pair_percent,apicals,left_bulges,right_bulges,repeats\n"
             
             data+=iter.replace("<", "").replace(",", "")+"," #Adds a general name and removes any devilish commas
             data+=str(paired_percent)+"," #Adds complementarity score
@@ -172,7 +202,13 @@ if seqs != "nope":
             data+=str(pairs['GU']/pair_count)+"," #Adds percent of GU pairings
             data+=str(bulge_counts["apicals"])+"," #Adds the number of apical loops
             data+=str(bulge_counts["l_bulges"])+"," #Adds the number of 5 prime bulges
-            data+=str(bulge_counts["r_bulges"])+"\n" #Adds the number of 3 prime bulges
+            data+=str(bulge_counts["r_bulges"])+"," #Adds the number of 3 prime bulges
+            if len(tick) > 2:
+                data+=tick+"\n" #Tags if sequence contains a repeat
+            elif args.Repeats:
+                data+=str(repWindow)+"-"+str(foundRepeat)+"\n" #Tags if sequence contains a repeat
+            else:
+                data+="NA\n" #Tags if sequence contains a repeat
 
             with open(outFile, 'a') as f:
                 f.write(data)

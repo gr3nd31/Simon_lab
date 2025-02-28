@@ -54,6 +54,7 @@ parser.add_argument("-s", "--sequence", help = "Path to the sequence file. If bl
 parser.add_argument("-S", "--StartSequence", help="Relative start position of sequence (0-1). Default = 0.") #
 parser.add_argument("-b", "--bulgeType", help="Type of bulge (symmetrical, left, right). If blank, no bulges are intentionally created")
 parser.add_argument("-B", "--BulgePosition", help="Relative position on the stem for the bulge (0-1). Default 0.5") #
+parser.add_argument("-R", "--Repeats", help="Flag repeats. Give an integer length to check if sequence is repeated.")
 parser.add_argument("-c", "--BulgeSize", help="Number of nucleotides to make the bulge (default 5)") #
 parser.add_argument("-p", "--PairedPercent", help = "Percent of hairpin that is paired (0-1, default 1)") #
 parser.add_argument("-l", "--length", help="Length of the hairpin (default = 30)") #
@@ -61,11 +62,25 @@ parser.add_argument("-a", "--apicalLoop", help = "Length of sequence in the apic
 parser.add_argument("-o", "--out", help="Name of output file") #
 parser.parse_args()
 args = parser.parse_args()
+
 # Assigns the length of the hairpin
 if args.length:
     hp_length = int(args.length)
 else:
     hp_length = 30
+
+# Option to check is a sequence is repeated in the hairpin
+if args.Repeats:
+    try:
+        repWindow=int(args.Repeats)
+        foundRepeat=False
+    except:
+        print("Unable to parse given integer. Defaulting to 5.")
+        repWindow=5
+        foundRepeat=False
+else:
+    repWindow=0
+    foundRepeat=False
 
 # Pulls a target sequence
 if args.sequence:
@@ -76,6 +91,16 @@ if args.sequence:
         sequence = sequence.replace("T", "U")
         seq_file.close()
         fasta = "hairpin_"+args.sequence
+
+        if repWindow > 1:
+            foundRepeat=False
+            for i in range(0, len(sequence)):
+                subRep=sequence[i:i+repWindow]
+                p=[match.start() for match in re.finditer(subRep, sequence)]
+                if len(p) > 1:
+                    foundRepeat=True
+            if foundRepeat:
+                print("Given sequence contains a sequence repeat of at least "+str(repWindow)+" bases.")
     except:
         print("Unable to read sequence file. Continuing without a sequence.")
         sequence = ""
@@ -227,17 +252,30 @@ for iter in range(0, nnum):
 
     hp_seq+=ap_seq
     hp_seq+=revc
+    tick=""
+    if args.Repeats:
+        tick+=str(repWindow)+"-"
+        foundRepeat=False
+        for i in range(0, len(hp_seq)):
+            subRep=hp_seq[i:i+repWindow]
+            if len(subRep) >= repWindow:
+                p=[match.start() for match in re.finditer(subRep, hp_seq)]
+                if len(p) > 1:
+                    foundRepeat=True
+                    tick+=str(i+1)+":"
+        if len(tick) > 2:
+            tick=tick[0:len(tick)-1]
+
     if os.path.isfile(outFile):
         data = ""
     else:
-        data = "Name,Complementarity,ApicalSize,ApicalSeq,Bulge,BulgeSize,BulgePosition,BulgeSeq,StemLength,Sequence,Structure,Length,bp,GC,dG,dG_Length,PE,APE,GC_pairs,AU_pairs,GU_pairs,GC_pair_percent,AU_pair_percent,GU_pair_percent,apicals,left_bulges,right_bulges\n"
+        data = "Name,Complementarity,ApicalSize,ApicalSeq,Bulge,BulgeSize,BulgePosition,BulgeSeq,StemLength,Sequence,Structure,Length,bp,GC,dG,dG_Length,PE,APE,GC_pairs,AU_pairs,GU_pairs,GC_pair_percent,AU_pair_percent,GU_pair_percent,apicals,left_bulges,right_bulges,repeats\n"
 
     fc = RNA.fold_compound(hp_seq)
     fc.pf()
     
     pairs = get_pairs(fc.mfe()[0], hp_seq)
     bulge_counts = bulge_count(fc.mfe()[0])
-
 
     data+=fasta+"," #Adds a general name
     data+=str(paired_percent)+"," #Adds complementarity score
@@ -270,7 +308,13 @@ for iter in range(0, nnum):
     data+=str(pairs['GU']/pair_count)+"," #Adds percent of GU pairings
     data+=str(bulge_counts["apicals"])+"," #Adds the number of apical loops
     data+=str(bulge_counts["l_bulges"])+"," #Adds the number of 5 prime bulges
-    data+=str(bulge_counts["r_bulges"])+"\n" #Adds the number of 3 prime bulges
+    data+=str(bulge_counts["r_bulges"])+"," #Adds the number of 3 prime bulges
+    if len(tick) > 2:
+        data+=tick+"\n" #Tags if sequence contains a repeat
+    elif args.Repeats:
+        data+=str(repWindow)+"-"+str(foundRepeat)+"\n" #Tags if sequence contains a repeat
+    else:
+        data+="NA\n" #Tags if sequence contains a repeat
 
     with open(outFile, 'a') as f:
         f.write(data)
