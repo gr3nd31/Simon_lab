@@ -464,7 +464,7 @@ graph_read_hsps <- function(file_name = "reads_df.csv",
   print(draft)
   #x <<- draft
   if (save_it & nchar(save_as) > 0){
-    ggsave(save_as, dpi = 300)
+    ggsave(save_as)
   }
 }
 
