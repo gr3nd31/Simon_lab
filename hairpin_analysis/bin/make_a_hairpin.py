@@ -38,15 +38,26 @@ def get_pairs(dotBra, rna):
                     hitsLib['other'].append(pair)
     return hitsLib
 
-def bulge_count(dotBra):
+def bulge_count(dotBra, rna):
     b_c = {"apicals": 0,
+           "apical_local": "",
            "l_bulges": 0,
-           "r_bulges": 0}
-    b_c["apicals"] = len(re.findall("\\(+\\.+\\)+", dotBra))
-    b_c["l_bulges"] = len(re.findall("\\(+\\.+\\(+", dotBra))
-    b_c["r_bulges"] = len(re.findall("\\)+\\.+\\)+", dotBra))
+           "lB_local": "",
+           "r_bulges": 0,
+           "rB_local": ""}
+    b_c["apicals"] = len(re.findall("\\(\\.+\\)", dotBra))
+    ap=re.compile("\\(\\.+\\)")
+    for found in ap.finditer(dotBra):
+        b_c["apical_local"]+=rna[found.start()+1:found.end()-1]+";"
+    b_c["l_bulges"] = len(re.findall("\\(\\.+\\(", dotBra))
+    ap=re.compile("\\(\\.+\\(")
+    for found in ap.finditer(dotBra):
+        b_c["lB_local"]+=rna[found.start()+1:found.end()-1]+";"
+    b_c["r_bulges"] = len(re.findall("\\)\\.+\\)", dotBra))
+    ap=re.compile("\\)\\.+\\)")
+    for found in ap.finditer(dotBra):
+        b_c["rB_local"]+=rna[found.start()+1:found.end()-1]+";"
     return b_c
-
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-n", "--numberOfIterations", help="Number of time to generate the hairpin")
@@ -55,6 +66,7 @@ parser.add_argument("-S", "--StartSequence", help="Relative start position of se
 parser.add_argument("-b", "--bulgeType", help="Type of bulge (symmetrical, left, right). If blank, no bulges are intentionally created")
 parser.add_argument("-B", "--BulgePosition", help="Relative position on the stem for the bulge (0-1). Default 0.5") #
 parser.add_argument("-R", "--Repeats", help="Flag repeats. Give an integer length to check if sequence is repeated.")
+parser.add_argument("-D", "--Details", help="Report sequences of apical loops and bulges rather than number.",  action='store_true')
 parser.add_argument("-c", "--BulgeSize", help="Number of nucleotides to make the bulge (default 5)") #
 parser.add_argument("-p", "--PairedPercent", help = "Percent of hairpin that is paired (0-1, default 1)") #
 parser.add_argument("-l", "--length", help="Length of the hairpin (default = 30)") #
@@ -256,13 +268,19 @@ for iter in range(0, nnum):
     if args.Repeats:
         tick+=str(repWindow)+"-"
         foundRepeat=False
+        repList=[]
         for i in range(0, len(hp_seq)):
             subRep=hp_seq[i:i+repWindow]
             if len(subRep) >= repWindow:
                 p=[match.start() for match in re.finditer(subRep, hp_seq)]
                 if len(p) > 1:
                     foundRepeat=True
-                    tick+=str(i+1)+":"
+                    for t in p:
+                        if t not in repList:
+                            repList.append(t)
+                            tick+=str(t+1)+":"
+                    tick=tick[0:len(tick)-1]
+                    tick+="_"
         if len(tick) > 2:
             tick=tick[0:len(tick)-1]
 
@@ -275,7 +293,7 @@ for iter in range(0, nnum):
     fc.pf()
     
     pairs = get_pairs(fc.mfe()[0], hp_seq)
-    bulge_counts = bulge_count(fc.mfe()[0])
+    bulge_counts = bulge_count(fc.mfe()[0], hp_seq)
 
     data+=fasta+"," #Adds a general name
     data+=str(paired_percent)+"," #Adds complementarity score
@@ -306,9 +324,14 @@ for iter in range(0, nnum):
     data+=str(pairs['GC']/pair_count)+"," #Adds percent of GC pairings
     data+=str(pairs['AU']/pair_count)+"," #Adds percent of AU pairings
     data+=str(pairs['GU']/pair_count)+"," #Adds percent of GU pairings
-    data+=str(bulge_counts["apicals"])+"," #Adds the number of apical loops
-    data+=str(bulge_counts["l_bulges"])+"," #Adds the number of 5 prime bulges
-    data+=str(bulge_counts["r_bulges"])+"," #Adds the number of 3 prime bulges
+    if args.Details:
+        data+=str(bulge_counts["apical_local"])+"," #Adds the number of apical loops
+        data+=str(bulge_counts["lB_local"])+"," #Adds the number of 5 prime bulges
+        data+=str(bulge_counts["rB_local"])+"," #Adds the number of 3 prime bulges
+    else:
+        data+=str(bulge_counts["apicals"])+"," #Adds the number of apical loops
+        data+=str(bulge_counts["l_bulges"])+"," #Adds the number of 5 prime bulges
+        data+=str(bulge_counts["r_bulges"])+"," #Adds the number of 3 prime bulges
     if len(tick) > 2:
         data+=tick+"\n" #Tags if sequence contains a repeat
     elif args.Repeats:

@@ -7,6 +7,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-s", "--sequence", help = "Path to the sequence file. If blank, a random hairpin is generated") #
 parser.add_argument("-l", "--length", help="Maximum length sequence to be folded")
 parser.add_argument("-R", "--Repeats", help="Flag repeats. Give an integer length to check if sequence is repeated.")
+parser.add_argument("-D", "--Details", help="Report sequences of apical loops and bulges rather than number.",  action='store_true')
 parser.add_argument("-o", "--out", help="Name of output file") #
 parser.parse_args()
 args = parser.parse_args()
@@ -45,13 +46,25 @@ def get_pairs(dotBra, rna):
                     hitsLib['other'].append(pair)
     return hitsLib
 
-def bulge_count(dotBra):
+def bulge_count(dotBra, rna):
     b_c = {"apicals": 0,
+           "apical_local": "",
            "l_bulges": 0,
-           "r_bulges": 0}
-    b_c["apicals"] = len(re.findall("\\(+\\.+\\)+", dotBra))
-    b_c["l_bulges"] = len(re.findall("\\(+\\.+\\(+", dotBra))
-    b_c["r_bulges"] = len(re.findall("\\)+\\.+\\)+", dotBra))
+           "lB_local": "",
+           "r_bulges": 0,
+           "rB_local": ""}
+    b_c["apicals"] = len(re.findall("\\(\\.+\\)", dotBra))
+    ap=re.compile("\\(\\.+\\)")
+    for found in ap.finditer(dotBra):
+        b_c["apical_local"]+=rna[found.start()+1:found.end()-1]+";"
+    b_c["l_bulges"] = len(re.findall("\\(\\.+\\(", dotBra))
+    ap=re.compile("\\(\\.+\\(")
+    for found in ap.finditer(dotBra):
+        b_c["lB_local"]+=rna[found.start()+1:found.end()-1]+";"
+    b_c["r_bulges"] = len(re.findall("\\)\\.+\\)", dotBra))
+    ap=re.compile("\\)\\.+\\)")
+    for found in ap.finditer(dotBra):
+        b_c["rB_local"]+=rna[found.start()+1:found.end()-1]+";"
     return b_c
 
 def read_fasta(fastafile):
@@ -139,14 +152,19 @@ if seqs != "nope":
             if args.Repeats:
                 tick+=str(repWindow)+"-"
                 foundRepeat=False
+                repList=[]
                 for i in range(0, len(hp_seq)):
                     subRep=hp_seq[i:i+repWindow]
                     if len(subRep) >= repWindow:
                         p=[match.start() for match in re.finditer(subRep, hp_seq)]
                         if len(p) > 1:
                             foundRepeat=True
-                            tick+=str(i+1)+":"
-
+                            for t in p:
+                                if t not in repList:
+                                    repList.append(t)
+                                    tick+=str(t+1)+":"
+                            tick=tick[0:len(tick)-1]
+                            tick+="_"
                 if len(tick) > 2:
                     tick=tick[0:len(tick)-1]
 
@@ -154,7 +172,7 @@ if seqs != "nope":
             fc.pf()
 
             pairs = get_pairs(fc.mfe()[0], subSeq)
-            bulge_counts = bulge_count(fc.mfe()[0])
+            bulge_counts = bulge_count(fc.mfe()[0], subSeq)
 
             structure = fc.mfe()[0].replace(",", ".")
             paired_percent = 1-round(structure.count(".")/len(structure),2)
@@ -200,9 +218,14 @@ if seqs != "nope":
             data+=str(pairs['GC']/pair_count)+"," #Adds percent of GC pairings
             data+=str(pairs['AU']/pair_count)+"," #Adds percent of AU pairings
             data+=str(pairs['GU']/pair_count)+"," #Adds percent of GU pairings
-            data+=str(bulge_counts["apicals"])+"," #Adds the number of apical loops
-            data+=str(bulge_counts["l_bulges"])+"," #Adds the number of 5 prime bulges
-            data+=str(bulge_counts["r_bulges"])+"," #Adds the number of 3 prime bulges
+            if args.Details:
+                data+=str(bulge_counts["apical_local"])+"," #Adds the number of apical loops
+                data+=str(bulge_counts["lB_local"])+"," #Adds the number of 5 prime bulges
+                data+=str(bulge_counts["rB_local"])+"," #Adds the number of 3 prime bulges
+            else:
+                data+=str(bulge_counts["apicals"])+"," #Adds the number of apical loops
+                data+=str(bulge_counts["l_bulges"])+"," #Adds the number of 5 prime bulges
+                data+=str(bulge_counts["r_bulges"])+"," #Adds the number of 3 prime bulges
             if len(tick) > 2:
                 data+=tick+"\n" #Tags if sequence contains a repeat
             elif args.Repeats:
