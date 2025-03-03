@@ -229,7 +229,7 @@ if seqs != "nope":
                 if len(bulge_counts["lB_local"]) > 0:
                     data+=str(bulge_counts["lB_local"][0:len(bulge_counts["lB_local"])-1])+"," #Adds the number of 5 prime bulges
                 else:
-                    ata+="None,"
+                    data+="None,"
                 if len(bulge_counts["rB_local"]) > 0:
                     data+=str(bulge_counts["rB_local"][0:len(bulge_counts["rB_local"])-1])+"," #Adds the number of 3 prime bulges
                 else:
