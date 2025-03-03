@@ -159,6 +159,9 @@ if seqs != "nope":
                         p=[match.start() for match in re.finditer(subRep, hp_seq)]
                         if len(p) > 1:
                             foundRepeat=True
+                            if subRep not in repList:
+                                tick+=subRep+":"
+                                repList.append(subRep)
                             for t in p:
                                 if t not in repList:
                                     repList.append(t)
@@ -219,15 +222,27 @@ if seqs != "nope":
             data+=str(pairs['AU']/pair_count)+"," #Adds percent of AU pairings
             data+=str(pairs['GU']/pair_count)+"," #Adds percent of GU pairings
             if args.Details:
-                data+=str(bulge_counts["apical_local"])+"," #Adds the number of apical loops
-                data+=str(bulge_counts["lB_local"])+"," #Adds the number of 5 prime bulges
-                data+=str(bulge_counts["rB_local"])+"," #Adds the number of 3 prime bulges
+                if len(bulge_counts["apical_local"]) > 0:
+                    data+=str(bulge_counts["apical_local"][0:len(bulge_counts["apical_local"])-1])+"," #Adds the number of apical loops
+                else:
+                    data+="None,"
+                if len(bulge_counts["lB_local"]) > 0:
+                    data+=str(bulge_counts["lB_local"][0:len(bulge_counts["lB_local"])-1])+"," #Adds the number of 5 prime bulges
+                else:
+                    ata+="None,"
+                if len(bulge_counts["rB_local"]) > 0:
+                    data+=str(bulge_counts["rB_local"][0:len(bulge_counts["rB_local"])-1])+"," #Adds the number of 3 prime bulges
+                else:
+                    data+="None,"
             else:
                 data+=str(bulge_counts["apicals"])+"," #Adds the number of apical loops
                 data+=str(bulge_counts["l_bulges"])+"," #Adds the number of 5 prime bulges
                 data+=str(bulge_counts["r_bulges"])+"," #Adds the number of 3 prime bulges
             if len(tick) > 2:
-                data+=tick+"\n" #Tags if sequence contains a repeat
+                if args.Details:
+                    data+=tick+"\n" #Tags if sequence contains a repeat
+                else:
+                    data+=str(repWindow)+"-"+str(foundRepeat)+"\n" #Tags if sequence contains a repeat
             elif args.Repeats:
                 data+=str(repWindow)+"-"+str(foundRepeat)+"\n" #Tags if sequence contains a repeat
             else:
