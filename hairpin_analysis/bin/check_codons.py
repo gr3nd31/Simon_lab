@@ -1,4 +1,7 @@
 import argparse
+import plotnine as pn
+import polars
+
 parser = argparse.ArgumentParser()
 parser.add_argument("-s", "--sequence", help = "Path to the sequence file.") #
 parser.add_argument('-c', '--coding', help= "Keep coding sequence the same. Should be an integer indicating the position where coding begins. Default is 0 (first base)")
@@ -82,23 +85,40 @@ else:
     endPoint = len(fasta)
 
 if runIt:
+    peptide = ""
     fasta_name = fasta.split()[0]
     fasta_seq = fasta.split()[1]
     fasta = fasta_seq[startPoint:endPoint]
-for i in range(0, len(fasta), 3):
+    for i in range(0, len(fasta), 3):
         tick = fasta[i:i+3]
         catch[tick][2]+=1
         amino_table[catch[tick][0]]+=1
+        peptide+=catch[tick][0]
     
-for i in catch:
-    if amino_table[catch[i][0]] > 0:
-        catch[i][3] = round(catch[i][2]/amino_table[catch[i][0]], 2)
-    else:
-        catch[i][3] = 0
+    for i in catch:
+        if amino_table[catch[i][0]] > 0:
+            catch[i][3] = round(catch[i][2]/amino_table[catch[i][0]], 2)
+        else:
+            catch[i][3] = 0
 
-outString = "codon,amino,count,aCount,expPercent,realPercent\n"
-for i in catch:
-    outString+=i+","+catch[i][0]+","+str(catch[i][2])+","+str(amino_table[catch[i][0]])+","+str(catch[i][1])+","+str(catch[i][3])+"\n"
+    outString = "codon,amino,count,aCount,expPercent,realPercent,peptide\n"
+    for i in catch:
+        outString+=i+","+catch[i][0]+","+str(catch[i][2])+","+str(amino_table[catch[i][0]])+","+str(catch[i][1])+","+str(catch[i][3])+","+peptide+"\n"
 
-with open(outFile, 'w') as f:
-    f.write(outString)
+    with open(outFile, 'w') as f:
+        f.write(outString)
+
+
+    datum = polars.read_csv(outFile)
+    datum = datum.filter(polars.col("aCount") > 0)
+    pn.ggsave(pn.ggplot(datum)
+          +pn.aes(x="expPercent", y="realPercent")
+          +pn.geom_abline(slope=1, intercept = 0, size = 2, color = "gray", alpha = 0.5)
+          +pn.geom_point()
+          +pn.aes(color = "amino", size = "aCount")
+          +pn.labs(x = "Expected Usage",
+                   y = "Actual Usage")
+          +pn.guides(color = pn.guide_legend(title = "Amino Acid"),
+                     size = pn.guide_legend(title = "Freq"))
+          +pn.theme_bw(), "codonUsage_"+args.sequence.split(".")[0]+".png", dpi=300)
+
