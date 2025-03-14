@@ -111,15 +111,20 @@ if runIt:
 
 
     datum = polars.read_csv(outFile)
+    for i in set(datum["amino"]):
+        aSum = sum(datum.filter(polars.col("amino") == i)["expPercent"])
+        datum = datum.with_columns(polars.when(polars.col("amino") == i).then(polars.col("expPercent")/aSum).otherwise(polars.col("expPercent")))
+    
+    datum.write_csv(outFile, separator=",")
     datum = datum.filter(polars.col("aCount") > 0)
     pn.ggsave(pn.ggplot(datum)
           +pn.aes(x="expPercent", y="realPercent")
-          +pn.geom_abline(slope=1, intercept = 0, size = 2, color = "gray", alpha = 0.5)
-          +pn.geom_point()
+          +pn.geom_abline(slope=1, intercept = 0, size = 1, color = "gray", alpha = 0.5)
+          +pn.geom_point(alpha = 0.5)
           +pn.aes(color = "amino", size = "aCount")
           +pn.labs(x = "Expected Usage",
                    y = "Actual Usage")
           +pn.guides(color = pn.guide_legend(title = "Amino Acid"),
                      size = pn.guide_legend(title = "Freq"))
-          +pn.theme_bw(), "codonUsage_"+args.sequence.split(".")[0]+".png", dpi=300)
+          +pn.theme_bw(), "codonUsage_"+args.sequence.split(".")[0]+".png", dpi=300, verbose = False)
 
