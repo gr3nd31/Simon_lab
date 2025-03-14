@@ -42,6 +42,8 @@ if args.sequence:
         sequence = seq_file.read().strip()
         seq_file.close()
         fasta = sequence
+        fasta_name = fasta.split()[0]
+        fasta_seq = fasta.split()[1].replace("T", "U")
     except:
         runIt = False
 
@@ -53,7 +55,7 @@ if args.usageTable:
         use_table = sequence.split("\n")
         catch = {}
         for i in use_table:
-            codon = i.split(" ")[0]
+            codon = i.split(" ")[0].replace("T", "U")
             percent = float(i.split(" ")[1])
             catch[codon] = [codon_table[codon], percent, 0, 0]
         
@@ -80,20 +82,19 @@ if args.endCoding:
         endPoint = int(args.endCoding)
     except:
         print("Unable to parse given start position. Defaulting to first position")
-        endPoint = len(fasta)
+        endPoint = len(fasta_seq)
 else:
-    endPoint = len(fasta)
+    endPoint = len(fasta_seq)
 
 if runIt:
     peptide = ""
-    fasta_name = fasta.split()[0]
-    fasta_seq = fasta.split()[1]
     fasta = fasta_seq[startPoint:endPoint]
     for i in range(0, len(fasta), 3):
         tick = fasta[i:i+3]
-        catch[tick][2]+=1
-        amino_table[catch[tick][0]]+=1
-        peptide+=catch[tick][0]
+        if len(tick) == 3:
+            catch[tick][2]+=1
+            amino_table[catch[tick][0]]+=1
+            peptide+=catch[tick][0]
     
     for i in catch:
         if amino_table[catch[i][0]] > 0:
