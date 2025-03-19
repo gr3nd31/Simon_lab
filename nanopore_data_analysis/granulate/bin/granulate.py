@@ -6,7 +6,7 @@ import argparse
 
 # Set default values of necessary arguments
 genome_file = "CY1.fasta"
-del_threshold = 6
+del_threshold = 7
 locale="both.json"
 evalue_threshold=1
 random_sample=False
