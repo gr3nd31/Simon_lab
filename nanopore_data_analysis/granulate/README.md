@@ -12,6 +12,7 @@
 <b>3) deletions_df.csv</b>: A csv file containing the read, position, and identities of larger deletions (> 7 bases).
 </p>
 
+## Use
 <p>
 To use, simply place your reference sequence files in the `references` directory and run `bash bin/run_granulate.sh PATH/TO/READS.fasta`. The reference file name and header should be simple to prevent errors (example: '>TCV' instead of '>Turnip Crinkle Virus, isolate 161321'). The script first runs an alignment against all given references to separate reads based on alignment into newly generated directories. Reads that align to multiple references are assigned to the reference they align to better. Reads that are equally aligned to multiple references are assigned to all aligning references, as well as placed into a `multiple` directory that is not analyzed but can be referenced later.
 </p>
