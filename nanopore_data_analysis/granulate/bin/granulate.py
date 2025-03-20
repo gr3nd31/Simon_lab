@@ -26,7 +26,7 @@ parser.add_argument("-d", "--deletion_threshold", help = "Minimum deletion size 
 parser.add_argument("-e", "--evalue_threshold", help = "Minimum evalue score for alignments to be included. Default is 1.")
 parser.add_argument("-o", "--output", help = "Path to output. Default is current directory")
 parser.add_argument("-t", "--tag", help = "Prefix tag for files")
-parser.add_argument("-r", "--reference", help = "Name of reference as it is presented in the json description.")
+parser.add_argument("-r", "--reference", help = "Name to put in the 'reference' column of the reads_df.csv. Default is name of reference as it is presented in the json description.")
 parser.parse_args()
 print("\n")
 
