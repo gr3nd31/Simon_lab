@@ -432,8 +432,13 @@ graph_read_hsps <- function(file_name = "reads_df.csv",
                    linewidth = 4, alpha = 1, lineend = "round")+
       labs(color = "HSPS number")+
       theme(legend.position = element_blank())
-  } else {
-    print("Coloring parameter not recognized. Please try with 'number', 'sense', 'start', 'end', 'mismatch', 'deletion', or 'insertion'. Defaulting to 'number'.")
+  } else if (color_by == "reference"){
+    draft <- draft+
+      geom_segment(data = datum, aes(x = q_start, y = read_id, xend = q_end, yend = read_id, color = reference),
+                   linewidth = 4, alpha = 1, lineend = "round")+
+      labs(color = "Reference")
+  }else {
+    print("Coloring parameter not recognized. Please try with 'number', 'sense', 'start', 'end', 'mismatch', 'deletion', 'insertion', or 'reference'. Defaulting to 'number'.")
     draft <- draft+
       geom_segment(data = datum, aes(x = q_start, y = read_id, xend = q_end, yend = read_id, color = hsps),
                    linewidth = 4, alpha = 1, lineend = "round")+
