@@ -72,6 +72,8 @@ if args.tag:
 # Sets a reference name to specifically pull from the alignment
 if args.reference:
     target_title=args.reference
+else:
+    target_title="none"
 
 
 print("Comparing reads in "+locale+" with "+genome_file+"...\n")
@@ -102,7 +104,7 @@ except:
 #Creates headers for the output csv files
 del_df="Number,read_id,orientation,sense,position,size,del_seq\n"
 ins_df="Number,read_id,orientation,sense,position,size,ins_seq\n"
-read_df="Number,read_id,hsps,bit_score,evalue,coverage,q_strand,h_strand,orientation,read_length,length,h_start,h_end,q_start,q_end,skipped,deletion_num,mismatch_num,insert_num\n"
+read_df="Number,read_id,reference,hsps,bit_score,evalue,coverage,q_strand,h_strand,orientation,read_length,length,h_start,h_end,q_start,q_end,skipped,deletion_num,mismatch_num,insert_num\n"
 
 if runit:
     print("Parsing file: "+locale)
@@ -162,6 +164,8 @@ if runit:
                 read_id = j["query_title"]
                 # Records the length of the read
                 read_length = j["query_len"]
+                if target_title=="none":
+                    target_title=j["hits"][0]["description"][0]["title"]
                 # iterates through each hsps alignment for the read
                 read_data_raw = j["hits"][0]["hsps"]
                 for hsps in read_data_raw:
@@ -169,25 +173,13 @@ if runit:
                     # counts the number of HSPS
                     hsps_number+=1
                     # intiates a 'skip' variable to skip reads that do not align to anything or have an evalue score above the given threshold
-                    skipit="True"
+                    skipit="False"
                     try:
                         if read_data['evalue'] < evalue_threshold:
                             skipit="False"
                     except:
                         if "e-" in read_data["evalue"]:
                             skipit="False"
-                    try:
-                        the_title = j["hits"][0]["description"][0]["title"]
-                        if target_title == "":
-                            skipit="False"
-                        elif the_title.lower() == target_title.lower() and target_title != "":
-                            skipit="False"
-                            #print(the_title)
-                        else:
-                            skipit = "True"
-                            #print(the_title)
-                    except:
-                        continue
                         
                     #records the starting hit position
                     h_from=read_data['hit_from']
@@ -344,7 +336,7 @@ if runit:
                         aligned_reads+=1
                     # Appends the read to the existing csv file
                     with open(save_locale+prefixed+'reads_df.csv', 'a') as f:
-                        f.write(str(spot_read)+","+read_id+","+str(hsps_number)+","+str(read_data["bit_score"])+","+str(read_data["evalue"])+","+str(100*(span/len(genome)))+","+q_strand+","+h_strand+","+direction+","+str(read_length)+","+str(read_data['align_len'])+","+str(h_from)+","+str(h_to)+","+str(q_from)+","+str(q_to)+","+skipit+","+str(current_dels)+","+str(current_misses)+","+str(current_inserts)+"\n")
+                        f.write(str(spot_read)+","+read_id+","+target_title+","+str(hsps_number)+","+str(read_data["bit_score"])+","+str(read_data["evalue"])+","+str(100*(span/len(genome)))+","+q_strand+","+h_strand+","+direction+","+str(read_length)+","+str(read_data['align_len'])+","+str(h_from)+","+str(h_to)+","+str(q_from)+","+str(q_to)+","+skipit+","+str(current_dels)+","+str(current_misses)+","+str(current_inserts)+"\n")
                     max_insertion_length = 0
                 if random_sample and aligned_reads >= sampling_number:
                     break
