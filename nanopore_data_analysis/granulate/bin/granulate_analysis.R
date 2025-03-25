@@ -330,6 +330,7 @@ graph_read_hsps <- function(file_name = "reads_df.csv",
                                 save_it = T,
                                 save_as = "read_hsps.png",
                                 subset_data = T,
+                                save_subset = F,
                                 subset_number = 20,
                                 skips = T,
                                 plotly_it = F){
@@ -471,7 +472,101 @@ graph_read_hsps <- function(file_name = "reads_df.csv",
   if (save_it & nchar(save_as) > 0){
     ggsave(save_as)
   }
+  if(save_subset){
+    write_csv(datum, "subsetReads_df.csv")
+    subsetReads <<- datum
+  }
 }
+
+#-------------------------------
+# graph_northern
+#  graphs reads as they would appear in a northern blot
+#  using probes designated in the parameters
+#-------------------------------
+
+graph_northern <- function(fileName = "reads_df.csv",
+                           probe_start = 30,
+                           probe_end = 130,
+                           strands = "Plus",
+                           max_size = 5000,
+                           min_size = 50,
+                           subset_number = F,
+                           tag = "",
+                           transform_length = F,
+                           transform_number = 2,
+                           ylims = FALSE,
+                           line_wd = 1,
+                           alph = 0.01, 
+                           save_it = T){
+  runIt <- TRUE
+  if(typeof(fileName) == "character"){
+    datum <- read_csv(fileName, show_col_types = F)
+  } else if (typeof(fileName) == "list"){
+    datum <- fileName
+  } else {
+    print("Unable to open or read data. Aborting.")
+    runIt <- FALSE
+  }
+  if (runIt){
+    if (strands == "Plus"){
+      interim <- datum[datum$h_start <= probe_start &
+                         datum$h_end >= probe_end & 
+                         datum$h_strand == strands &
+                         datum$read_length <= max_size &
+                         datum$read_length >= min_size,]
+    } else if (strands == "Minus"){
+      interim <- datum[datum$h_start >= probe_end &
+                         datum$h_end <= probe_start & 
+                         datum$h_strand == strands &
+                         datum$read_length <= max_size &
+                         datum$read_length >= min_size,]
+      if(nchar(tag) > 0){
+        tag <- paste0(tag, "_Minus")
+      } else{
+        tag <- paste0(tag, "Minus")
+      }
+    } else {
+      print("Unable to reckonize strand request, returning 'Plus'")
+      interim <- datum[datum$h_start <= probe_start &
+                         datum$h_end >= probe_end & 
+                         datum$h_strand == strands &
+                         datum$read_length <= max_size &
+                         datum$read_length >= min_size,]
+    }
+    
+    if (transform_length){
+      interim$read_length <- log(interim$read_length, transform_number)
+    }
+    if (typeof(subset_number) == "double"){
+      if (length(unique(interim$read_id)) > subset_number){
+        interim <- interim[sample(nrow(interim), subset_number),]
+      } else {
+        print(paste0("Only ", length(unique(interim$read_id)), " reads matching the parameters. Only graphing that number"))
+      }
+    }
+    draft <- ggplot(data = interim)+
+      geom_segment(aes(x=0.5, xend = 1.5, y=read_length, yend = read_length), alpha = alph, linewidth = line_wd)+
+      theme_bw()+
+      labs(y = "Read Length")+
+      theme(panel.grid = element_blank(),
+            axis.title.x = element_blank(),
+            axis.ticks.x = element_blank(),
+            axis.text.x = element_blank(),
+            axis.title.y = element_text(size = 10),
+            axis.text.y = element_text(size = 8, angle = 90, vjust = 1, hjust = 1))
+    if (typeof(ylims) == "double"){
+      draft <- draft+ylim(ylims[1], ylims[2])
+    }
+    print(draft)
+    if (nchar(tag) > 0){
+      tag <- paste0("_", tag)
+    }
+    if (save_it){
+      ggsave(paste0("Northern_probe_",probe_start, "-", probe_end ,tag,".png"), dpi = 300, width = 1, height = 5)
+    }
+  }
+}
+
 
 #-------------------------------
 # pull_ids
