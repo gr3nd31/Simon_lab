@@ -215,43 +215,59 @@ graph_reads_map <- function(file_name = "reads_df.csv",
                          width = 1,
                          pre_sub = F,
                          make_widget = F,
-                         skip_skips = T){
+                         skip_skips = F){
+  reanalyze <- T
+  run_it <- T
+  
   # Read the file
-  datum <- read_csv(file_name, show_col_types = F)
-  if (skip_skips){
-    datum <- datum[datum$skipped == "FALSE",]
+  if (typeof(file_name) == "list"){
+    datum <- file_name
+    reanalyze <- F
+  } else if (typeof(file_name) == "character"){
+    datum <- read_csv(file_name, show_col_types = F)
+  } else{
+    print("Unable to read input dataframe. Aborting.")
+    run_it <- F
   }
   
-  # Skips aligned_length generation if already present
-  if (!"aligned_length" %in% names(datum)){
-    if (pre_sub & subset_num > 0){
-      print(paste0("Pre-subsetting to ", subset_num, " reads."))
-      # Caps sampling at max of reads
-      if (subset_num  > nrow(datum)){
-        print("Subset given exceeds number of reads. Defaulting to max")
-        subset_num <- nrow(datum)
+  if (run_it & reanalyze){
+    # Skips aligned_length generation if already present
+    if (!"aligned_length" %in% names(datum)){
+      if (pre_sub & subset_num > 0){
+        print(paste0("Pre-subsetting to ", subset_num, " reads."))
+        # Caps sampling at max of reads
+        if (subset_num  > nrow(datum)){
+          print("Subset given exceeds number of reads. Defaulting to max")
+          subset_num <- nrow(datum)
+        }
+        # Randomly samples reads
+        datum <- datum[sample(nrow(datum), subset_num),]
       }
-      # Randomly samples reads
-      datum <- datum[sample(nrow(datum), subset_num),]
-    }
-    # Sums the length of all alignments found on the read
-    datum$aligned_length <- 0
-    datum$hsps_count <- 1
-    for (i in unique(datum$read_id)){
-      datum[datum$read_id ==i,]$hsps_count <- nrow(datum[datum$read_id==i,])
-      datum[datum$read_id ==i,]$aligned_length <- sum(datum[datum$read_id==i,]$length)
-    }
-    datum$deletion_ave <- datum$deletion_num/datum$length
-    datum$mismatch_ave <- datum$mismatch_num/datum$length
-    datum$insert_ave <- datum$insert_num/datum$length
-    #Orders by negative length
-    datum <- datum[order(-datum$aligned_length),]
-    datum$a_id <- ordered(-datum$aligned_length)
-    # Saves the file
-    if (pre_sub){
-      write_csv(datum, paste0("pre_subbed_to_", subset_num, "_",file_name))
+      # Sums the length of all alignments found on the read
+      datum$aligned_length <- 0
+      datum$hsps_count <- 1
+      for (i in unique(datum$read_id)){
+        datum[datum$read_id ==i,]$hsps_count <- nrow(datum[datum$read_id==i,])
+        datum[datum$read_id ==i,]$aligned_length <- sum(datum[datum$read_id==i,]$length)
+      }
+      datum$deletion_ave <- datum$deletion_num/datum$length
+      datum$mismatch_ave <- datum$mismatch_num/datum$length
+      datum$insert_ave <- datum$insert_num/datum$length
+      #Orders by negative length
+      datum <- datum[order(-datum$aligned_length),]
+      datum$a_id <- ordered(-datum$aligned_length)
+      # Saves the file
+      if (pre_sub){
+        write_csv(datum, paste0("pre_subbed_to_", subset_num, "_",file_name))
+      } else {
+        write_csv(datum, file_name)
+      }
     } else {
-      write_csv(datum, file_name)
+      # Orders by negative length in case of graphing
+      print("Aggregate aligment length detected. Skipping analysis.")
+      datum <- datum[sample(nrow(datum), subset_num),]
+      datum <- datum[order(-datum$aligned_length),]
+      datum$a_id <- ordered(-datum$aligned_length)
     }
   } else {
     # Orders by negative length in case of graphing
@@ -259,6 +275,10 @@ graph_reads_map <- function(file_name = "reads_df.csv",
     datum <- datum[sample(nrow(datum), subset_num),]
     datum <- datum[order(-datum$aligned_length),]
     datum$a_id <- ordered(-datum$aligned_length)
+  }
+  
+  if (skip_skips){
+    datum <- datum[datum$skipped == "FALSE",]
   }
   # Graphs is told to
   if(graph_it){
@@ -508,13 +528,13 @@ graph_northern <- function(fileName = "reads_df.csv",
     runIt <- FALSE
   }
   if (runIt){
-    if (strands == "Plus"){
+    if (strands == "Plus" & probe_start > 0 & probe_end > 0){
       interim <- datum[datum$h_start <= probe_start &
                          datum$h_end >= probe_end & 
                          datum$h_strand == strands &
                          datum$read_length <= max_size &
                          datum$read_length >= min_size,]
-    } else if (strands == "Minus"){
+    } else if (strands == "Minus" & probe_start > 0 & probe_end > 0){
       interim <- datum[datum$h_start >= probe_end &
                          datum$h_end <= probe_start & 
                          datum$h_strand == strands &
@@ -525,6 +545,9 @@ graph_northern <- function(fileName = "reads_df.csv",
       } else{
         tag <- paste0(tag, "Minus")
       }
+    } else if (probe_start == 0 & probe_end == 0){
+      interim <- datum[datum$read_length <= max_size &
+                         datum$read_length >= min_size,]
     } else {
       print("Unable to reckonize strand request, returning 'Plus'")
       interim <- datum[datum$h_start <= probe_start &
