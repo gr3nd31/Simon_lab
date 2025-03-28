@@ -30,6 +30,7 @@ graph_coverage_map <- function(file_name="genome_df.csv",
                        window_length = 2,
                        graph_them = T,
                        save_them=TRUE,
+                       log_transform = F,
                        graph_skew = FALSE,
                        prefix=""){
   datum <- read_csv(file_name, show_col_types = F)
@@ -59,6 +60,10 @@ graph_coverage_map <- function(file_name="genome_df.csv",
     write_csv(datum, file_name)
   } else {
     print("Coverage map data already detected. Skipping analysis")
+  }
+  
+  if(log_transform){
+    datum$number_hit <- log(datum$number_hit, 10)
   }
   
   if (graph_them){
@@ -208,6 +213,7 @@ graph_reads_map <- function(file_name = "reads_df.csv",
                          split_strand = F,
                          color_strand = F,
                          set_line = 0,
+                         log_transform = F,
                          graph_it = T,
                          save_it = T,
                          prefix = "",
@@ -280,6 +286,9 @@ graph_reads_map <- function(file_name = "reads_df.csv",
   if (skip_skips){
     datum <- datum[datum$skipped == "FALSE",]
   }
+  if (log_transform){
+    datum$a_id <- -log(datum$aligned_length, 10)
+  }
   # Graphs is told to
   if(graph_it){
     #Subset the dataframe for very large files
@@ -303,7 +312,8 @@ graph_reads_map <- function(file_name = "reads_df.csv",
         xlab("Genome")+
         theme_bw()+
         theme(axis.text.y = element_blank(),
-              axis.ticks.y = element_blank())
+              axis.ticks.y = element_blank(),
+              panel.grid = element_blank())
     } else {
       draft <- ggplot(datum)+
         geom_segment(aes(x=h_start, xend=h_end, 
@@ -312,7 +322,8 @@ graph_reads_map <- function(file_name = "reads_df.csv",
         xlab("Genome")+
         theme_bw()+
         theme(axis.text.y = element_blank(),
-              axis.ticks.y = element_blank())
+              axis.ticks.y = element_blank(),
+              panel.grid = element_blank())
     }
     
     # Adds facet_wraps
@@ -508,6 +519,7 @@ graph_northern <- function(fileName = "reads_df.csv",
                            probe_start = 30,
                            probe_end = 130,
                            strands = "Plus",
+                           color_by = "none",
                            max_size = 5000,
                            min_size = 50,
                            subset_number = F,
@@ -567,8 +579,32 @@ graph_northern <- function(fileName = "reads_df.csv",
         print(paste0("Only ", length(unique(interim$read_id)), " reads matching the parameters. Only graphing that number"))
       }
     }
-    draft <- ggplot(data = interim)+
-      geom_segment(aes(x=0.5, xend = 1.5, y=read_length, yend = read_length), alpha = alph, linewidth = line_wd)+
+    draft <- ggplot(data = interim)
+    if (color_by == "none"){
+      draft <- draft+
+        geom_segment(aes(x=0.5, xend = 1.5, y=read_length, yend = read_length), alpha = alph, linewidth = line_wd)
+    } else if(color_by == "start"){
+      draft <- draft+
+        geom_segment(aes(x=0.5, xend = 1.5, y=read_length, yend = read_length, color = h_start), alpha = alph, linewidth = line_wd)+
+        scale_color_viridis_c(option = "turbo")
+    } else if(color_by == "end"){
+      draft <- draft+
+        geom_segment(aes(x=0.5, xend = 1.5, y=read_length, yend = read_length, color = h_end), alpha = alph, linewidth = line_wd)+
+        scale_color_viridis_c(option = "turbo")
+    } else if(color_by=="hsps"){
+      draft <- draft+
+        geom_segment(aes(x=0.5, xend = 1.5, y=read_length, yend = read_length, color = hsps_count), alpha = alph, linewidth = line_wd)+
+        scale_color_viridis_b(option = "turbo")
+    } else if(color_by == "sense"){
+      draft <- draft+
+        geom_segment(aes(x=0.5, xend = 1.5, y=read_length, yend = read_length, color = h_strand), alpha = alph, linewidth = line_wd)+
+        scale_color_manual(values = c("darkred", 'darkblue'))
+    } else {
+      print("Unable to color by given argument and defaulting to 'none'. Valid argumnets are 'start', 'end', 'sene', or 'hsps'.")
+      draft <- draft+
+        geom_segment(aes(x=0.5, xend = 1.5, y=read_length, yend = read_length), alpha = alph, linewidth = line_wd)
+    }
+    draft <- draft+
       theme_bw()+
       labs(y = "Read Length")+
       theme(panel.grid = element_blank(),
@@ -576,7 +612,8 @@ graph_northern <- function(fileName = "reads_df.csv",
             axis.ticks.x = element_blank(),
             axis.text.x = element_blank(),
             axis.title.y = element_text(size = 10),
-            axis.text.y = element_text(size = 8, angle = 90, vjust = 1, hjust = 1))
+            axis.text.y = element_text(size = 8, angle = 90, vjust = 1, hjust = 1),
+            legend.position = "top")
     if (typeof(ylims) == "double"){
       draft <- draft+ylim(ylims[1], ylims[2])
     }
