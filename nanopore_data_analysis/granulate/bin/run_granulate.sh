@@ -1,6 +1,7 @@
 #! /bin/bash
 
-seq_file=$1
+# Removes potential extra read information sometimes present after fastq -> fasta conversion
+python3 bin/rename.py -i $1 -o renamed_reads.fasta
 
 # Creates blast database in the 'reference' directory
 echo "Creating blast db..."
@@ -17,7 +18,7 @@ cd ../
 
 # Runs a preliminary alignment
 echo "Running alignment..."
-blastn -db references/db.fasta -query $seq_file -outfmt 6 -out db_aligned.tsv
+blastn -db references/db.fasta -query renamed_reads.fasta -outfmt 6 -out db_aligned.tsv
 rm -r references/db.fasta*
 
 # Generates a list of reads that likely belong to each reference and saves them to reference-specific folders
@@ -40,7 +41,7 @@ do
             if [ ! -f "$t.json" ]; then
                 if [ $t == $i ]; then
                     # The reference-specific reads are pulled from the main reads file
-                    python3 ../../bin/pullbacks.py -l $(ls *txt) -r ../../$1
+                    python3 ../../bin/pullbacks.py -l $(ls *txt) -r ../../renamed_reads.fasta
                     # The appropriate reference file is pulled in and turned into a blast db
                     cp ../../references/$j ref.fasta
                     makeblastdb -in ref.fasta -dbtype nucl
@@ -58,5 +59,6 @@ do
         done
     cd ../
 done
+rm ../renamed_reads.fasta
 echo ""
 echo "Read refinement, alignment, and granulation complete."
