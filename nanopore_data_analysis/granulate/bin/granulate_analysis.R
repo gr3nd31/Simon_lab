@@ -3,8 +3,11 @@
 # graph_coverage_map()
 # Analysis of the genome_df.csv file
 #-------------
-#graph_reads_map()
+# graph_reads_map()
 # Analysis of the reads_df.csv file
+#-------------
+# foldback_finder()
+#  Analyzes reads_df.csv dataframe to find potential foldback seqeunces
 #-------------
 # pull_ids()
 # Pulls read ids from a given df and saves to 'reads.txt'
@@ -627,6 +630,63 @@ graph_northern <- function(fileName = "reads_df.csv",
   }
 }
 
+#-------------------------------
+# foldback_finder
+#  Analyzes reads_df.csv dataframe to find potential foldback seqeunces
+#-------------------------------
+
+foldback_finder <- function(df,
+                            checkForHalves = TRUE,
+                            minRatio = 1.7,
+                            maxRatio = 2.1,
+                            minSize = 500,
+                            graph_reads = TRUE,
+                            outList = "PossibleFBs.txt",
+                            outCSV = "PossibleFBs.csv"){
+  runIt <- TRUE
+  if (typeof(df) == "character"){
+    datum <- read_csv(df)
+  } else if (typeof(df) == "list"){
+    datum <- df
+  } else {
+    print("Unable to read given reads list Abortin'")
+    runIt <- FALSE
+  }
+  if (runIt){
+    datum <- datum[datum$aligned_length > minSize,]
+    theList <- ""
+    for (i in unique(datum$read_id)){
+      if (length(unique(datum[datum$read_id == i,]$h_strand)) > 1){
+        theList <- paste0(theList, i,"\n")
+        if (!exists("FBs")){
+          FBs <- datum[datum$read_id == i,]
+        } else {
+          FBs <- rbind(FBs, datum[datum$read_id == i,])
+        }
+      } else if (checkForHalves){
+        readLength <- unique(datum[datum$read_id ==i,]$read_length)[1]
+        alignedLength <- unique(datum[datum$read_id ==i,]$aligned_length)[1]
+        if (readLength/alignedLength >= minRatio &
+            readLength/alignedLength <= maxRatio){
+          theList <- paste0(theList, i,"\n")
+          if (!exists("FBs")){
+            FBs <- datum[datum$read_id == i,]
+          } else {
+            FBs <- rbind(FBs, datum[datum$read_id == i,])
+          }
+        }
+      }
+    }
+    
+    if (nchar(theList) > 0){
+      cat(theList, file = outList)
+      write_csv(FBs, outCSV)
+    }
+    if (graph_reads & exists("graph_read_hsps") & nchar(theList) > 0){
+      graph_read_hsps(FBs, color_by = "sense", as_percent = T)
+    }
+  }
+}
 
 #-------------------------------
 # pull_ids
