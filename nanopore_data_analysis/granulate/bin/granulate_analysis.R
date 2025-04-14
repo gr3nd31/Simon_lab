@@ -255,9 +255,11 @@ graph_reads_map <- function(file_name = "reads_df.csv",
       # Sums the length of all alignments found on the read
       datum$aligned_length <- 0
       datum$hsps_count <- 1
+      datum$ETL <- 0
       for (i in unique(datum$read_id)){
         datum[datum$read_id ==i,]$hsps_count <- nrow(datum[datum$read_id==i,])
         datum[datum$read_id ==i,]$aligned_length <- sum(datum[datum$read_id==i,]$length)
+        datum[datum$read_id == i,]$ETL <- max(datum[datum$read_id == i,]$read_length)-max(datum[datum$read_id == i,]$q_end)
       }
       datum$deletion_ave <- datum$deletion_num/datum$length
       datum$mismatch_ave <- datum$mismatch_num/datum$length
@@ -358,7 +360,7 @@ graph_reads_map <- function(file_name = "reads_df.csv",
 #  graphs the position of hspss within each read
 #-------------------------------
 
-graph_read_hsps <- function(file_name = "reads_df.csv",
+graph_hsps <- function(file_name = "reads_df.csv",
                                 as_percent = F,
                                 color_by = "number",
                                 save_it = T,
