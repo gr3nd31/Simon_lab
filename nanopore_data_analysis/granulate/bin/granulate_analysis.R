@@ -212,6 +212,7 @@ graph_coverage_map <- function(file_name="genome_df.csv",
 #-------------------------------
 graph_reads_map <- function(file_name = "reads_df.csv",
                          subset_num = 1000,
+                         save_subset = F,
                          split_hsps=F,
                          split_strand = F,
                          color_strand = F,
@@ -239,18 +240,19 @@ graph_reads_map <- function(file_name = "reads_df.csv",
     run_it <- F
   }
   
+  if (subset_num > length(unique(datum$read_id))){
+    print(paste0("Requested subset number (", subset_num, ") is greater than existing reads (", length(unique(datum$read_id)), "). Defaulting to all reads."))
+    subset_num <- length(unique(datum$read_id))
+  }
+  
   if (run_it & reanalyze){
     # Skips aligned_length generation if already present
     if (!"aligned_length" %in% names(datum)){
       if (pre_sub & subset_num > 0){
         print(paste0("Pre-subsetting to ", subset_num, " reads."))
-        # Caps sampling at max of reads
-        if (subset_num  > nrow(datum)){
-          print("Subset given exceeds number of reads. Defaulting to max")
-          subset_num <- nrow(datum)
-        }
         # Randomly samples reads
-        datum <- datum[sample(nrow(datum), subset_num),]
+        subset_list <- sample(datum$read_id, subset_num)
+        datum <- datum[datum$read_id %in% subset_list,]
       }
       # Sums the length of all alignments found on the read
       datum$aligned_length <- 0
@@ -276,14 +278,17 @@ graph_reads_map <- function(file_name = "reads_df.csv",
     } else {
       # Orders by negative length in case of graphing
       print("Aggregate aligment length detected. Skipping analysis.")
-      datum <- datum[sample(nrow(datum), subset_num),]
+      subset_list <- sample(datum$read_id, subset_num)
+      datum <- datum[datum$read_id %in% subset_list,]
+      
       datum <- datum[order(-datum$aligned_length),]
       datum$a_id <- ordered(-datum$aligned_length)
     }
   } else {
     # Orders by negative length in case of graphing
     print("Aggregate aligment length detected. Skipping analysis.")
-    datum <- datum[sample(nrow(datum), subset_num),]
+    subset_list <- sample(datum$read_id, subset_num)
+    datum <- datum[datum$read_id %in% subset_list,]
     datum <- datum[order(-datum$aligned_length),]
     datum$a_id <- ordered(-datum$aligned_length)
   }
@@ -297,16 +302,18 @@ graph_reads_map <- function(file_name = "reads_df.csv",
   # Graphs is told to
   if(graph_it){
     #Subset the dataframe for very large files
-    if (subset_num > 0){
-      print(paste0("Subsetting graph to ", subset_num, " reads."))
-      # Caps sampling at max of reads
-      if (subset_num  > nrow(datum)){
-        print("Subset given exceeds number of reads. Defaulting to max")
-        subset_num <- nrow(datum)
-      }
-      # Randomly samples reads
-      datum <- datum[sample(nrow(datum), subset_num),]
-    }
+    # if (subset_num > 0){
+    #   print(paste0("Subsetting graph to ", subset_num, " reads."))
+    #   # Caps sampling at max of reads
+    #   if (subset_num  > length(unique(datum$read_id))){
+    #     print("Subset given exceeds number of reads. Defaulting to max")
+    #     subset_num <- length(datum$read_id)
+    #   }
+    #   print(subset_num)
+    #   # Randomly samples reads
+    #   subset_list <- sample(datum$read_id, subset_num)
+    #   datum <- datum[datum$read_id %in% subset_list,]
+    # }
     # Graphs the data as a stacked-alignment plot
     if (color_strand){
       draft <- ggplot(datum)+
@@ -351,6 +358,11 @@ graph_reads_map <- function(file_name = "reads_df.csv",
     }
     if (make_widget){
       htmlwidgets::saveWidget(ggplotly(draft), paste0(prefix, "stacks.html"), selfcontained = T)
+    }
+    if(save_subset){
+      write_csv(datum, "subsetReads_df.csv")
+      subsetReads <<- datum
+      print("Saved subset as variable 'subsetReads'")
     }
   }
 }
@@ -509,8 +521,9 @@ graph_hsps <- function(file_name = "reads_df.csv",
     ggsave(save_as)
   }
   if(save_subset){
-    write_csv(datum, "subsetReads_df.csv")
-    subsetReads <<- datum
+    write_csv(datum, "subsetReads_HSPS_df.csv")
+    subsetHSPS <<- datum
+    print("Saved subset as variable 'subsetHSPS'")
   }
 }
 
