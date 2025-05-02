@@ -261,8 +261,9 @@ if runit:
                                             genome_dict[str((ticker*k)+h_from)][3]+=1
                                             current_misses+=1
                                     except:
-                                        print(new_qseq[k].upper())
-                                        print(genome_dict[str((ticker*k)+h_from)][2])
+                                        pass
+                                        #print(new_qseq[k].upper())
+                                        #print(genome_dict[str((ticker*k)+h_from)][2])
                                     
 
                                 #Tracks insertions and inserted bases
@@ -272,7 +273,8 @@ if runit:
                                     try:
                                         genome_dict[str((ticker*k)+h_from)][6][qseq[k].upper()]+=1
                                     except:
-                                        print(qseq[k].upper())
+                                        pass
+                                        #print(qseq[k].upper())
                                     insert_detected=True
                                     current_inserts+=1
                                     if ticker==1:
