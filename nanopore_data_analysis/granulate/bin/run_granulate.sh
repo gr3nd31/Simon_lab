@@ -1,7 +1,11 @@
 #! /bin/bash
 
+# Converts fastq to fasta. If already fasta, this should do nothing
+cat $1 | awk '{if(NR%4==1) {printf(">%s\n",substr($0,2));} else if(NR%4==2) print;}' > OUTPUT.fasta
 # Removes potential extra read information sometimes present after fastq -> fasta conversion
-python3 bin/rename.py -i $1 -o renamed_reads.fasta
+python3 bin/rename.py -i OUTPUT.fasta -o renamed_reads.fasta
+# Removes the temporary output.fasta file
+rm OUTPUT.fasta
 
 # Creates blast database in the 'reference' directory
 echo "Creating blast db..."
