@@ -5,9 +5,8 @@ import pandas as pd
 parser = argparse.ArgumentParser()
 parser.add_argument("-i", "--input", help = "Path to the RNACanvas file")
 parser.add_argument("-d", "--data", help = "Path to the CSV file containing data")
-parser.add_argument("-p", "--palette", help = "Viridis palette to use. Default is 'inferno'")
+parser.add_argument("-R", "--reset", help = "Reset bases with absent data to black.", action='store_true')
 parser.add_argument("-o", "--output", help = "Path to output. Default is current directory")
-parser.add_argument("-t", "--threshold", help = "Threshold to begin coloring at.")
 parser.parse_args()
 
 # Read arguments from command line
@@ -55,14 +54,21 @@ if runIt:
         print("Given data is longer than bases in canvas file. Check files and try again.")
     else:
         for i in canvas.split("</tspan>"):
-            if counter in data['number'] and len(i) > 0:
+            if counter in data['number'].values and len(i) > 0:
                 the_start+=i.split('fill=\\"')[0]
                 the_start+='fill=\\"'
                 the_start+=data[data['number'] == counter]['hex'].values[0]+''
                 the_start+=i.split('fill=\\"')[1][7:]
                 the_start+="</tspan>"
+            elif args.reset and len(i) > 0:
+                the_start+=i.split('fill=\\"')[0]
+                the_start+='fill=\\"'
+                the_start+='#000000'
+                the_start+=i.split('fill=\\"')[1][7:]
+                the_start+="</tspan>"
             else:
                 the_start+=i+"</tspan>"
+                #print(counter)
             counter+=1
             #print(the_start)
 

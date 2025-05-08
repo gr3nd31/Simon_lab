@@ -25,4 +25,4 @@ brainbox <- function(input_file,
   write_csv(datum, output_file)
 }
 
-#brainbox(input_file = "CY1 Structure.rnacanvas", data_file = "all_genome_df.csv", viridis_palette = "plasma", threshold = 0.2)
+brainbox(input_file = "CY1 Structure.rnacanvas", data_file = "hexed_data_t1.csv", viridis_palette = "plasma", threshold = 0, output_file = "t1.csv")
