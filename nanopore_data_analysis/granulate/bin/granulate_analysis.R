@@ -389,6 +389,8 @@ graph_hsps <- function(file_name = "reads_df.csv",
     datum <- file_name
   }
   
+  runIt <- TRUE
+  
   # Subsets the data
   if (subset_data & typeof(subset_number) == "double"){
     print("Sampling data...")
@@ -406,124 +408,132 @@ graph_hsps <- function(file_name = "reads_df.csv",
   if (!skips){
     datum <- datum[datum$skipped == "False",]
   }
-  # Orders the dataframe and applies levels to the hit strand sense
-  datum <- datum[order(-datum$aligned_length),]
-  datum$h_strand <- ordered(datum$h_strand, levels = c("Plus", "Minus"))
-  datum$hsps <- as.character(datum$hsps)
-  # Creates a second dataframe to record the total read information and assigns the same y-axis number for HSPS within those reads
-  y_tick <- 1
-  datum$y1 <- 0
-  for (i in unique(datum$read_id)){
-    datum[datum$read_id == i,]$y1 <- y_tick
-    if(as_percent){
-      datum[datum$read_id == i,]$q_start <- 1+as.integer(100*datum[datum$read_id == i,]$q_start/max(datum[datum$read_id ==i,]$read_length))
-      datum[datum$read_id == i,]$q_end <- as.integer(100*datum[datum$read_id == i,]$q_end/max(datum[datum$read_id ==i,]$read_length))
+  
+  if (!"aligned_length" %in% names(datum)){
+    print("Reads have not been mapped yet. Please run graph_reads_map() first.")
+    runIt <- FALSE
+  }
+  
+  if (runIt){
+    # Orders the dataframe and applies levels to the hit strand sense
+    datum <- datum[order(-datum$aligned_length),]
+    datum$h_strand <- ordered(datum$h_strand, levels = c("Plus", "Minus"))
+    datum$hsps <- as.character(datum$hsps)
+    # Creates a second dataframe to record the total read information and assigns the same y-axis number for HSPS within those reads
+    y_tick <- 1
+    datum$y1 <- 0
+    for (i in unique(datum$read_id)){
+      datum[datum$read_id == i,]$y1 <- y_tick
+      if(as_percent){
+        datum[datum$read_id == i,]$q_start <- 1+as.integer(100*datum[datum$read_id == i,]$q_start/max(datum[datum$read_id ==i,]$read_length))
+        datum[datum$read_id == i,]$q_end <- as.integer(100*datum[datum$read_id == i,]$q_end/max(datum[datum$read_id ==i,]$read_length))
+      }
+      chicken <- tibble("read_id" = i,
+                        "start" = 1,
+                        "end" = max(datum[datum$read_id == i,]$read_length),
+                        "y1" = y_tick)
+      if (!exists("interim")){
+        interim <- chicken
+      } else {
+        interim <- rbind(interim, chicken)
+      }
+      y_tick <- y_tick + 1
     }
-    chicken <- tibble("read_id" = i,
-                      "start" = 1,
-                      "end" = max(datum[datum$read_id == i,]$read_length),
-                      "y1" = y_tick)
-    if (!exists("interim")){
-      interim <- chicken
+    # Changes the end number if the data is to be presented as a percent
+    if (as_percent){
+      interim$end <- 100
+    }
+    
+    # Graphs data with various coloring schemes
+    draft <- ggplot()+
+      geom_segment(data = interim, aes(x = start, y = read_id, xend = end, yend = read_id),
+                   color = "darkgray", linewidth = 5, alpha = 1, lineend = "round")
+    if (color_by == "sense"){
+      draft <- draft+
+        geom_segment(data = datum, aes(x = q_start, y = read_id, xend = q_end, yend = read_id, color = h_strand),
+                     linewidth = 4, alpha = 1, lineend = "round")+
+        scale_color_manual(values = c("orange", "lightblue"))+
+        labs(color = "Alignment Sense")
+    } else if (color_by == "start"){
+      draft <- draft+
+        geom_segment(data = datum, aes(x = q_start, y = read_id, xend = q_end, yend = read_id, color = h_start),
+                     linewidth = 4, alpha = 1, lineend = "round")+
+        scale_color_viridis_b(option = "inferno")+
+        labs(color = "Alignment Start")
+    } else if (color_by == "end"){
+      draft <- draft+
+        geom_segment(data = datum, aes(x = q_start, y = read_id, xend = q_end, yend = read_id, color = h_end),
+                     linewidth = 4, alpha = 1, lineend = "round")+
+        scale_color_viridis_b(option = "inferno")+
+        labs(color = "Alignment End")
+    } else if (color_by == "mismatch"){
+      draft <- draft+
+        geom_segment(data = datum, aes(x = q_start, y = read_id, xend = q_end, yend = read_id, color = mismatch_ave*100),
+                     linewidth = 4, alpha = 1, lineend = "round")+
+        scale_color_viridis_b(option = "inferno")+
+        labs(color = "Mismatch Freq")
+    } else if (color_by == "deletion"){
+      draft <- draft+
+        geom_segment(data = datum, aes(x = q_start, y = read_id, xend = q_end, yend = read_id, color = deletion_ave*100),
+                     linewidth = 4, alpha = 1, lineend = "round")+
+        scale_color_viridis_b(option = "inferno")+
+        labs(color = "Deletion Freq")
+    } else if (color_by == "insertion"){
+      draft <- draft+
+        geom_segment(data = datum, aes(x = q_start, y = read_id, xend = q_end, yend = read_id, color = insert_ave*100),
+                     linewidth = 4, alpha = 1, lineend = "round")+
+        scale_color_viridis_b(option = "inferno")+
+        labs(color = "Insertion Freq")
+    } else if (color_by == "number"){
+      draft <- draft+
+        geom_segment(data = datum, aes(x = q_start, y = read_id, xend = q_end, yend = read_id, color = hsps),
+                     linewidth = 4, alpha = 1, lineend = "round")+
+        labs(color = "HSPS number")+
+        theme(legend.position = element_blank())
+    } else if (color_by == "reference"){
+      draft <- draft+
+        geom_segment(data = datum, aes(x = q_start, y = read_id, xend = q_end, yend = read_id, color = reference),
+                     linewidth = 4, alpha = 1, lineend = "round")+
+        labs(color = "Reference")
+    }else {
+      print("Coloring parameter not recognized. Please try with 'number', 'sense', 'start', 'end', 'mismatch', 'deletion', 'insertion', or 'reference'. Defaulting to 'number'.")
+      draft <- draft+
+        geom_segment(data = datum, aes(x = q_start, y = read_id, xend = q_end, yend = read_id, color = hsps),
+                     linewidth = 4, alpha = 1, lineend = "round")+
+        labs(color = "HSPS Number")+
+        theme(legend.position = element_blank())
+    }
+    draft <- draft+
+      theme_bw()+
+      theme(axis.text.y = element_blank(),
+            panel.grid.major.y = element_blank(), 
+            axis.ticks.y = element_blank(),
+            legend.position = "top",
+            axis.title = element_text(size = 16),
+            axis.text = element_text(size = 14),
+            legend.text = element_text(size = 12),
+            legend.title = element_text(size = 14))
+    if (as_percent){
+      draft <- draft+
+        labs(x = "Relative Read Position (%)",
+             y = "")
     } else {
-      interim <- rbind(interim, chicken)
+      draft <- draft+
+        labs(x = "Read Position (nt)",
+             y = "")
     }
-    y_tick <- y_tick + 1
-  }
-  # Changes the end number if the data is to be presented as a percent
-  if (as_percent){
-    interim$end <- 100
-  }
-  
-  # Graphs data with various coloring schemes
-  draft <- ggplot()+
-    geom_segment(data = interim, aes(x = start, y = read_id, xend = end, yend = read_id),
-                 color = "darkgray", linewidth = 5, alpha = 1, lineend = "round")
-  if (color_by == "sense"){
-    draft <- draft+
-      geom_segment(data = datum, aes(x = q_start, y = read_id, xend = q_end, yend = read_id, color = h_strand),
-                   linewidth = 4, alpha = 1, lineend = "round")+
-      scale_color_manual(values = c("orange", "lightblue"))+
-      labs(color = "Alignment Sense")
-  } else if (color_by == "start"){
-    draft <- draft+
-      geom_segment(data = datum, aes(x = q_start, y = read_id, xend = q_end, yend = read_id, color = h_start),
-                   linewidth = 4, alpha = 1, lineend = "round")+
-      scale_color_viridis_b(option = "inferno")+
-      labs(color = "Alignment Start")
-  } else if (color_by == "end"){
-    draft <- draft+
-      geom_segment(data = datum, aes(x = q_start, y = read_id, xend = q_end, yend = read_id, color = h_end),
-                   linewidth = 4, alpha = 1, lineend = "round")+
-      scale_color_viridis_b(option = "inferno")+
-      labs(color = "Alignment End")
-  } else if (color_by == "mismatch"){
-    draft <- draft+
-      geom_segment(data = datum, aes(x = q_start, y = read_id, xend = q_end, yend = read_id, color = mismatch_ave*100),
-                   linewidth = 4, alpha = 1, lineend = "round")+
-      scale_color_viridis_b(option = "inferno")+
-      labs(color = "Mismatch Freq")
-  } else if (color_by == "deletion"){
-    draft <- draft+
-      geom_segment(data = datum, aes(x = q_start, y = read_id, xend = q_end, yend = read_id, color = deletion_ave*100),
-                   linewidth = 4, alpha = 1, lineend = "round")+
-      scale_color_viridis_b(option = "inferno")+
-      labs(color = "Deletion Freq")
-  } else if (color_by == "insertion"){
-    draft <- draft+
-      geom_segment(data = datum, aes(x = q_start, y = read_id, xend = q_end, yend = read_id, color = insert_ave*100),
-                   linewidth = 4, alpha = 1, lineend = "round")+
-      scale_color_viridis_b(option = "inferno")+
-      labs(color = "Insertion Freq")
-  } else if (color_by == "number"){
-    draft <- draft+
-      geom_segment(data = datum, aes(x = q_start, y = read_id, xend = q_end, yend = read_id, color = hsps),
-                   linewidth = 4, alpha = 1, lineend = "round")+
-      labs(color = "HSPS number")+
-      theme(legend.position = element_blank())
-  } else if (color_by == "reference"){
-    draft <- draft+
-      geom_segment(data = datum, aes(x = q_start, y = read_id, xend = q_end, yend = read_id, color = reference),
-                   linewidth = 4, alpha = 1, lineend = "round")+
-      labs(color = "Reference")
-  }else {
-    print("Coloring parameter not recognized. Please try with 'number', 'sense', 'start', 'end', 'mismatch', 'deletion', 'insertion', or 'reference'. Defaulting to 'number'.")
-    draft <- draft+
-      geom_segment(data = datum, aes(x = q_start, y = read_id, xend = q_end, yend = read_id, color = hsps),
-                   linewidth = 4, alpha = 1, lineend = "round")+
-      labs(color = "HSPS Number")+
-      theme(legend.position = element_blank())
-  }
-  draft <- draft+
-    theme_bw()+
-    theme(axis.text.y = element_blank(),
-          panel.grid.major.y = element_blank(), 
-          axis.ticks.y = element_blank(),
-          legend.position = "top",
-          axis.title = element_text(size = 16),
-          axis.text = element_text(size = 14),
-          legend.text = element_text(size = 12),
-          legend.title = element_text(size = 14))
-  if (as_percent){
-    draft <- draft+
-      labs(x = "Relative Read Position (%)",
-           y = "")
-  } else {
-    draft <- draft+
-      labs(x = "Read Position (nt)",
-           y = "")
-  }
-  
-  # Prints graph and saves
-  print(draft)
-  #x <<- draft
-  if (save_it & nchar(save_as) > 0){
-    ggsave(save_as)
-  }
-  if(save_subset){
-    write_csv(datum, "subsetReads_HSPS_df.csv")
-    subsetHSPS <<- datum
-    print("Saved subset as variable 'subsetHSPS'")
+    
+    # Prints graph and saves
+    print(draft)
+    #x <<- draft
+    if (save_it & nchar(save_as) > 0){
+      ggsave(save_as)
+    }
+    if(save_subset){
+      write_csv(datum, "subsetReads_HSPS_df.csv")
+      subsetHSPS <<- datum
+      print("Saved subset as variable 'subsetHSPS'")
+    }
   }
 }
 
