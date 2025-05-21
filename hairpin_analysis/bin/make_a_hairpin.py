@@ -71,6 +71,7 @@ parser.add_argument("-c", "--BulgeSize", help="Number of nucleotides to make the
 parser.add_argument("-p", "--PairedPercent", help = "Percent of hairpin that is paired (0-1, default 1)") #
 parser.add_argument("-l", "--length", help="Length of the hairpin (default = 30)") #
 parser.add_argument("-a", "--apicalLoop", help = "Length of sequence in the apical loop (default 5)") #
+parser.add_argument("-A", "--apicalSequence", help = "Sequence to place in the apical loop") #
 parser.add_argument("-o", "--out", help="Name of output file") #
 parser.parse_args()
 args = parser.parse_args()
@@ -124,6 +125,8 @@ else:
 # Determines the size of the apical loop
 if args.apicalLoop:
     ap_length = int(args.apicalLoop)
+elif args.apicalSequence:
+    ap_length=len(args.apicalSequence)
 else:
     ap_length = 5
 
@@ -171,6 +174,18 @@ if args.numberOfIterations:
 else:
     nnum = 1
 
+print("\nGenerating "+str(nnum)+" hairpins with a complementarity of "+str(paired_percent)+"% an apical loop of "+str(ap_length)+" bases.")
+if args.sequence:
+    print("Pulling seqence from '"+args.sequence+"' to place on the 5' side.")
+else:
+    print("Sequence will be randomly generated.")
+
+if args.apicalSequence:
+    print("Apical sequence of '"+args.apicalSequence+"' to be used.")
+
+if args.bulgeType:
+    print("Adding a "+args.bulgeType+" bulge.")
+
 for iter in range(0, nnum):
 # Defines the sequence of the bulge
     leftBulge = ""
@@ -199,6 +214,7 @@ for iter in range(0, nnum):
                 rightBulge += i
         else:
             print("Incorrect bulge type given.")
+            codpiece="None"
     else:
         codpiece="None"
         
@@ -259,8 +275,11 @@ for iter in range(0, nnum):
         counter-=1
 
     ap_seq=""
-    for i in range(0, ap_length):
-        ap_seq+=random.choice(nt_set)
+    if args.apicalSequence:
+        ap_seq = args.apicalSequence
+    else:
+        for i in range(0, ap_length):
+            ap_seq+=random.choice(nt_set)
 
     hp_seq+=ap_seq
     hp_seq+=revc
@@ -356,3 +375,5 @@ for iter in range(0, nnum):
 
     with open(outFile, 'a') as f:
         f.write(data)
+
+print("\nHairpins generated and stored in "+outFile)
