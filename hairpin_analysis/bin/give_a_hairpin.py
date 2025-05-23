@@ -12,6 +12,7 @@ parser.add_argument("-o", "--out", help="Name of output file") #
 parser.parse_args()
 args = parser.parse_args()
 sliceIt = False
+lcounter=0
 
 def get_pairs(dotBra, rna):
     braDot = dotBra[::-1]
@@ -137,6 +138,9 @@ if args.length:
 
 if seqs != "nope":
     for iter in seqs:
+        lcounter+=1
+        if lcounter%100 == 0:
+            print("Folding read: "+str(lcounter))
         hp_seq=seqs[iter].upper().replace(" ", "")
         hp_seq=hp_seq.replace("T", "U")
         if sliceIt:

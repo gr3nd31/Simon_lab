@@ -75,6 +75,7 @@ parser.add_argument("-A", "--apicalSequence", help = "Sequence to place in the a
 parser.add_argument("-o", "--out", help="Name of output file") #
 parser.parse_args()
 args = parser.parse_args()
+lcounter = 0
 
 # Assigns the length of the hairpin
 if args.length:
@@ -187,6 +188,9 @@ if args.bulgeType:
     print("Adding a "+args.bulgeType+" bulge.")
 
 for iter in range(0, nnum):
+    lcounter+=1
+    if lcounter%100 == 0:
+        print("Folding read: "+str(lcounter))
 # Defines the sequence of the bulge
     leftBulge = ""
     rightBulge = ""
