@@ -254,6 +254,7 @@ graph_reads_map <- function(file_name = "reads_df.csv",
   }
   
   if (run_it & reanalyze){
+    lcounter <- 0
     # Skips aligned_length generation if already present
     if (!"aligned_length" %in% names(datum)){
       if (pre_sub & subset_num > 0){
@@ -270,6 +271,10 @@ graph_reads_map <- function(file_name = "reads_df.csv",
       datum$sense_mer <- "NONE"
       
       for (i in unique(datum$read_id)){
+        lcounter <- lcounter+1
+        if(lcounter%%5000 == 0){
+          print(paste0("Analyzing read: ", lcounter, " (", round(lcounter/length(unique(datum$read_id)),2)*100, "%)"))
+        }
         # Counts the number of HSPSs on the read
         datum[datum$read_id ==i,]$hsps_count <- nrow(datum[datum$read_id==i,])
         # Adds the total aligned length on the read
