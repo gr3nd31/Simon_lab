@@ -24,6 +24,7 @@ suppressPackageStartupMessages(library(ggpubr))
 suppressPackageStartupMessages(library(tidyverse))
 suppressPackageStartupMessages(library(plotly))
 suppressPackageStartupMessages(library(htmlwidgets))
+suppressPackageStartupMessages(library(cowplot))
 
 #-------------------------------
 # graph_coverage_map()
@@ -225,7 +226,10 @@ graph_reads_map <- function(file_name = "reads_df.csv",
                          width = 1,
                          pre_sub = F,
                          make_widget = F,
-                         skip_skips = F){
+                         skip_skips = F,
+                         genome_size = 0,
+                         min_set = 0.1,
+                         max_set = 0.85){
   reanalyze <- T
   run_it <- T
   
@@ -245,6 +249,10 @@ graph_reads_map <- function(file_name = "reads_df.csv",
     subset_num <- length(unique(datum$read_id))
   }
   
+  if (genome_size == 0){
+    genome_size <- max(datum$length)
+  }
+  
   if (run_it & reanalyze){
     # Skips aligned_length generation if already present
     if (!"aligned_length" %in% names(datum)){
@@ -257,11 +265,58 @@ graph_reads_map <- function(file_name = "reads_df.csv",
       # Sums the length of all alignments found on the read
       datum$aligned_length <- 0
       datum$hsps_count <- 1
-      datum$ETL <- 0
+      datum$north_mer <- "Fragment"
+      datum$seq_mer <- "Fragment"
+      datum$sense_mer <- "NONE"
+      
       for (i in unique(datum$read_id)){
+        # Counts the number of HSPSs on the read
         datum[datum$read_id ==i,]$hsps_count <- nrow(datum[datum$read_id==i,])
+        # Adds the total aligned length on the read
         datum[datum$read_id ==i,]$aligned_length <- sum(datum[datum$read_id==i,]$length)
-        datum[datum$read_id == i,]$ETL <- max(datum[datum$read_id == i,]$read_length)-max(datum[datum$read_id == i,]$q_end)
+        
+        # Defines the read as plus only, minus only, or mixed
+        interim <- datum[datum$read_id == i,]
+        interim$length <- abs(interim$h_end - interim$h_start)
+        if (length(unique(interim$h_strand))==1){
+          if (unique(interim$h_strand) == "Plus"){
+            datum[datum$read_id ==i,]$sense_mer <- "Plus"
+          } else if (unique(interim$h_strand) == "Minus") {
+            datum[datum$read_id ==i,]$sense_mer <- "Minus"
+          }
+        } else if (length(unique(interim$h_strand)) == 2){
+          datum[datum$read_id ==i,]$sense_mer <- "Mixed"
+        }
+        
+        # gets the number times the genome size fits in the aligned length of the read
+        n_check <- sum(interim$length)/genome_size
+        # If the read is large enough to not be a fragment, its mer-classified
+        if (n_check >= max_set){
+          # Gets the remainder of the length of the read
+          m_check <- (sum(interim$length)%%genome_size)/genome_size
+          # if the remainder is long enough to count as a full length, its added as a full length
+          if (m_check >= max_set) {
+            datum[datum$read_id == i,]$north_mer <- paste0(as.character(sum(interim$length)%/%genome_size+1), "-mer")
+          } else if (m_check <= min_set){ #if its less than a certain amount, its ignored
+            datum[datum$read_id == i,]$north_mer <- paste0(as.character(sum(interim$length)%/%genome_size), "-mer")
+          } else { # if its between, its a +-mer
+            datum[datum$read_id == i,]$north_mer <- paste0(as.character(sum(interim$length)%/%genome_size), "+-mer")
+          }
+        }
+        
+        # counts the number of HSPSs that are longer than the minimal length to be considered 'full'
+        s_check <- as.numeric(nrow(interim[interim$length >= genome_size*max_set,]))
+        # if its longer than 1, its mer'd
+        if (s_check >= 1){
+          # counts the number of HSPSs that are longer than a fragment but shorter than full length
+          m_check <- nrow(interim[interim$length > genome_size*min_set & interim$length < genome_size*max_set,])
+          # intermediate fragments are detected, read is a +-mer
+          if (m_check > 0){
+            datum[datum$read_id == i,]$seq_mer <- paste0(as.character(s_check), "+-mer")
+          } else {
+            datum[datum$read_id == i,]$seq_mer <- paste0(as.character(s_check), "-mer")
+          }
+        }
       }
       datum$deletion_ave <- datum$deletion_num/datum$length
       datum$mismatch_ave <- datum$mismatch_num/datum$length
@@ -299,21 +354,8 @@ graph_reads_map <- function(file_name = "reads_df.csv",
   if (log_transform){
     datum$a_id <- -log(datum$aligned_length, 10)
   }
-  # Graphs is told to
+  # Graphs data
   if(graph_it){
-    #Subset the dataframe for very large files
-    # if (subset_num > 0){
-    #   print(paste0("Subsetting graph to ", subset_num, " reads."))
-    #   # Caps sampling at max of reads
-    #   if (subset_num  > length(unique(datum$read_id))){
-    #     print("Subset given exceeds number of reads. Defaulting to max")
-    #     subset_num <- length(datum$read_id)
-    #   }
-    #   print(subset_num)
-    #   # Randomly samples reads
-    #   subset_list <- sample(datum$read_id, subset_num)
-    #   datum <- datum[datum$read_id %in% subset_list,]
-    # }
     # Graphs the data as a stacked-alignment plot
     if (color_strand){
       draft <- ggplot(datum)+
@@ -364,6 +406,21 @@ graph_reads_map <- function(file_name = "reads_df.csv",
       subsetReads <<- datum
       print("Saved subset as variable 'subsetReads'")
     }
+    
+    interim <- as.data.frame(table(datum$north_mer))
+    interim$Freq <- interim$Freq/sum(interim$Freq)
+    n_graph <- ggplot(data = interim, aes(x=Var1, y = Freq))+
+      geom_bar(stat = "identity")+
+      labs(x = "Read Type", y = "Frequency", title = "Northern definitions")+
+      theme_cowplot(12)
+    sinterim <- as.data.frame(table(datum$seq_mer))
+    sinterim$Freq <- sinterim$Freq/sum(sinterim$Freq)
+    s_graph <- ggplot(data = sinterim, aes(x=Var1, y = Freq))+
+      geom_bar(stat = "identity")+
+      labs(x = "Read Type", y = "Frequency", title = "Sequence definitions")+
+      theme_cowplot(12)
+    print(plot_grid(n_graph, s_graph, ncol = 1))
+    ggsave(paste0(prefix,"mer_graph.png"), height = 8, width = 7, dpi = 300)
   }
 }
 
