@@ -250,7 +250,16 @@ graph_reads_map <- function(file_name = "reads_df.csv",
   }
   
   if (genome_size == 0){
-    genome_size <- max(datum$length)
+    if ("genome_df.csv" %in% list.files()){
+      gC <- read_csv("genome_df.csv", show_col_types = F)
+      print(paste0("Getting genome size from genome file (", nrow(gC), ")"))
+      genome_size <- nrow(gC)-12
+    } else {
+      print("Estimating genome size from maximum alignment length...")
+      genome_size <- max(datum$length)
+    }
+  } else {
+    genome_size <- genome_size-12
   }
   
   if (run_it & reanalyze){
