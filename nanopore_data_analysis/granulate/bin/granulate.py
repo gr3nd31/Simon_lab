@@ -20,6 +20,7 @@ runit=True
 # Initialize parser
 parser = argparse.ArgumentParser()
 parser.add_argument("-g", "--genome", help = "Path to the reference file")
+parser.add_argument("-B", "--best_only", help= "Only records the HSPS with the highest score", action='store_true')
 parser.add_argument("-a", "--alignment", help = "Path to the alignment json file")
 parser.add_argument("-s", "--sampling", help = "Number of alignments to randomly sample")
 parser.add_argument("-d", "--deletion_threshold", help = "Minimum deletion size to be recorded. Default is 6")
@@ -77,6 +78,9 @@ else:
 
 
 print("Comparing reads in "+locale+" with "+genome_file+"...\n")
+if args.best_only:
+    print("Only recording the first/best HSPS.\n")
+    prefixed = "BestOnly_"+prefixed
 
 try:
     #Opens the genome file
@@ -173,7 +177,7 @@ if runit:
                     # counts the number of HSPS
                     hsps_number+=1
                     # intiates a 'skip' variable to skip reads that do not align to anything or have an evalue score above the given threshold
-                    skipit="False"
+                    
                     try:
                         if read_data['evalue'] < evalue_threshold:
                             skipit="False"
@@ -218,6 +222,11 @@ if runit:
                             skipit="True"
                         elif old_h_to >= h_from and old_h_to <= h_to:
                             skipit="True"
+
+                    if args.best_only and hsps_number > 1:
+                        skipit = "True"
+                    else:
+                        skipit = "False"
 
                     # If the read is NOT skipped, the alignment is parsed
                     if skipit == "False":
