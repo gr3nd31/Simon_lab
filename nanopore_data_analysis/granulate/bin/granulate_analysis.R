@@ -227,6 +227,7 @@ graph_reads_map <- function(file_name = "reads_df.csv",
                          pre_sub = F,
                          make_widget = F,
                          skip_skips = F,
+                         print_mers = F,
                          genome_size = 0,
                          min_set = 0.1,
                          max_set = 0.85){
@@ -419,20 +420,22 @@ graph_reads_map <- function(file_name = "reads_df.csv",
       print("Saved subset as variable 'subsetReads'")
     }
     
-    interim <- as.data.frame(table(datum$north_mer))
-    interim$Freq <- interim$Freq/sum(interim$Freq)
-    n_graph <- ggplot(data = interim, aes(x=Var1, y = Freq))+
-      geom_bar(stat = "identity")+
-      labs(x = "Read Type", y = "Frequency", title = "Northern definitions")+
-      theme_cowplot(12)
-    sinterim <- as.data.frame(table(datum$seq_mer))
-    sinterim$Freq <- sinterim$Freq/sum(sinterim$Freq)
-    s_graph <- ggplot(data = sinterim, aes(x=Var1, y = Freq))+
-      geom_bar(stat = "identity")+
-      labs(x = "Read Type", y = "Frequency", title = "Sequence definitions")+
-      theme_cowplot(12)
-    print(plot_grid(n_graph, s_graph, ncol = 1))
-    ggsave(paste0(prefix,"mer_graph.png"), height = 8, width = 7, dpi = 300)
+    if (print_mers){
+      interim <- as.data.frame(table(datum$north_mer))
+      interim$Freq <- interim$Freq/sum(interim$Freq)
+      n_graph <- ggplot(data = interim, aes(x=Var1, y = Freq))+
+        geom_bar(stat = "identity")+
+        labs(x = "Read Type", y = "Frequency", title = "Northern definitions")+
+        theme_cowplot(12)
+      sinterim <- as.data.frame(table(datum$seq_mer))
+      sinterim$Freq <- sinterim$Freq/sum(sinterim$Freq)
+      s_graph <- ggplot(data = sinterim, aes(x=Var1, y = Freq))+
+        geom_bar(stat = "identity")+
+        labs(x = "Read Type", y = "Frequency", title = "Sequence definitions")+
+        theme_cowplot(12)
+      print(plot_grid(n_graph, s_graph, ncol = 1))
+      ggsave(paste0(prefix,"mer_graph.png"), height = 8, width = 7, dpi = 300)
+    }
   }
 }
 
