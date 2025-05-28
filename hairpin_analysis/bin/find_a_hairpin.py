@@ -84,7 +84,7 @@ else:
 
 #Checks is the len of the structure file is the same as a sequence
 if len(sequence) != len(structure):
-    print("Sequence and structure are not the saem length. Aborting.")
+    print("Sequence and structure are not the same length. Aborting.")
     runIt = False
 
 # Only runs if the necessary parameters are defined
