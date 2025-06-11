@@ -217,6 +217,7 @@ graph_reads_map <- function(file_name = "reads_df.csv",
                          split_hsps=F,
                          split_strand = F,
                          color_strand = F,
+                         color_frag = F,
                          set_line = 0,
                          log_transform = F,
                          graph_it = T,
@@ -243,6 +244,10 @@ graph_reads_map <- function(file_name = "reads_df.csv",
   } else{
     print("Unable to read input dataframe. Aborting.")
     run_it <- F
+  }
+  
+  if (color_frag & !"fragment_label" %in% names(datum)){
+    print("fragment_label not found in dataset. Try calling 'label_fragements()' function.")
   }
   
   if (subset_num > length(unique(datum$read_id))){
@@ -381,6 +386,17 @@ graph_reads_map <- function(file_name = "reads_df.csv",
         theme(axis.text.y = element_blank(),
               axis.ticks.y = element_blank(),
               panel.grid = element_blank())
+    } else if(color_frag & "fragment_label" %in% names(datum)){
+      draft <- ggplot(datum)+
+        geom_segment(aes(x=h_start, xend=h_end, 
+                         y=a_id, yend=a_id,
+                         color = fragment_label), alpha=alph, linewidth = width)+
+        ylab("Alignment length")+
+        xlab("Genome")+
+        theme_bw()+
+        theme(axis.text.y = element_blank(),
+              axis.ticks.y = element_blank(),
+              panel.grid = element_blank())
     } else {
       draft <- ggplot(datum)+
         geom_segment(aes(x=h_start, xend=h_end, 
@@ -436,6 +452,74 @@ graph_reads_map <- function(file_name = "reads_df.csv",
       print(plot_grid(n_graph, s_graph, ncol = 1))
       ggsave(paste0(prefix,"mer_graph.png"), height = 8, width = 7, dpi = 300)
     }
+  }
+}
+
+#-------------------------------
+# labe_fragments
+#  Iterates through given number of fragments and labels them for Osama
+#-------------------------------
+label_fragements <- function(df= "reads_df.csv",
+                             number=1){
+  graph_reads_map(save_it = F)
+  run_it <- TRUE
+  if (typeof(df) == "character"){
+    datum <- read_csv(df)
+  } else if (typeof(df) == "list"){
+    datum <- df
+  } else {
+    run_it <- FALSE
+    print("Unable to parse data/file. Aborting.")
+  }
+  if (run_it){
+    if (!"fragment_label" %in% names(datum)){
+      datum$fragment_label <- "None"
+    }
+    
+    for (i in c(1:number)){
+      print(paste0("Labeling fragment ", i, " of number."))
+      frag_name <- readline(prompt = "What is the name of this fragment? ")
+      hsps_num <- as.numeric(readline(prompt = paste0("How many HSPS should the ", frag_name, " fragment be (default 1)? ")))
+      if (is.na(hsps_num)){
+        hsps_num <- 1
+      }
+      if (hsps_num > 1){
+        print("Sorry, I'm not set up for multiple HSPS fragments yet. Do it yourself?")
+        hsps_num <- 1
+      }
+      frag_start <- as.numeric(readline(prompt = "What is the starting cutoff of the fragment? "))
+      graph_reads_map(save_it = F, set_line = frag_start)
+      good <- "n"
+      while (good != "y"){
+        good <- readline(prompt = "Does this look good (y/n)? ")
+        if (good != "y"){
+          frag_start <- as.numeric(readline(prompt = "What is the starting cutoff of the fragment? "))
+          graph_reads_map(save_it = F, set_line = frag_start)
+        }
+      }
+      frag_end <- as.numeric(readline(prompt = "What is the ending cutoff of the fragment? "))
+      graph_reads_map(save_it = F, set_line = frag_end)
+      good <- "n"
+      while (good != "y"){
+        good <- readline(prompt = "Does this look good (y/n)? ")
+        if (good != "y"){
+          frag_end <- as.numeric(readline(prompt = "What is the ending cutoff of the fragment? "))
+          graph_reads_map(save_it = F, set_line = frag_end)
+        }
+      }
+      frag_size <- as.numeric(readline(prompt = "What is the minimum size the fragment should be? "))
+      datum[(datum$h_strand == "Plus" & datum$h_start >= frag_start & datum$h_end <= frag_end) | 
+              (datum$h_strand == "Minus" & datum$h_start <= frag_start & datum$h_end >= frag_end),]$fragment_label <- frag_name
+      
+    }
+  }
+  graph_reads_map(datum, color_frag = T)
+  if (typeof(df) == "character"){
+    write_csv(datum, df)
+    print(paste0("Saving dataframe with labels as: ", df))
+  } else {
+    print("Returning dataframe...")
+    return(datum)
   }
 }
 
