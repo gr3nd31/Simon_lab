@@ -1,23 +1,31 @@
 #Contains the following functions:
 #-------------
 # graph_coverage_map()
-# Analysis of the genome_df.csv file
+#     Analysis of the genome_df.csv file
 #-------------
 # graph_reads_map()
-# Analysis of the reads_df.csv file
+#     Analysis of the reads_df.csv file
+#-------------
+# label_fragments
+#     Augments labeling of fragments from the reads_df.csv file
+#-------------
+# graph_northern
+#     Graphs reads as they would appear in a northern blot using probes designated in the parameters
+#-------------
+# graph_read_hsps
+#     Graphs the position of hspss within each read
 #-------------
 # foldback_finder()
-#  Analyzes reads_df.csv dataframe to find potential foldback seqeunces
+#     Analyzes reads_df.csv dataframe to find potential foldback seqeunces
 #-------------
 # pull_ids()
-# Pulls read ids from a given df and saves to 'reads.txt'
+#     Pulls read ids from a given df and saves to 'reads.txt'
 #------------
 #de_missed()
-# Analyses the mismatch data from the genome_df.csv file.
+#     Analyses the mismatch data from the genome_df.csv file.
 #-----------
 # fault_line
-# Compares the read_df and genome_df to calculate the starting
-# and ending frequency for reads
+#     Compares the read_df and genome_df to calculate the starting and ending frequency for reads
 #-----------
 
 suppressPackageStartupMessages(library(ggpubr))
@@ -457,7 +465,7 @@ graph_reads_map <- function(file_name = "reads_df.csv",
 }
 
 #-------------------------------
-# labe_fragments
+# label_fragments
 #  Iterates through given number of fragments and labels them for Osama
 #-------------------------------
 label_fragements <- function(df= "reads_df.csv",
