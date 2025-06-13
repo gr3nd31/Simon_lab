@@ -462,7 +462,7 @@ graph_reads_map <- function(file_name = "reads_df.csv",
 #-------------------------------
 label_fragements <- function(df= "reads_df.csv",
                              number=1){
-  graph_reads_map(save_it = F)
+  #graph_reads_map(save_it = F)
   run_it <- TRUE
   if (typeof(df) == "character"){
     datum <- read_csv(df)
@@ -478,40 +478,40 @@ label_fragements <- function(df= "reads_df.csv",
     }
     
     for (i in c(1:number)){
+      graph_reads_map(save_it = F, split_hsps = T, color_frag = T)
+      cat("\n")
       print(paste0("Labeling fragment ", i, " of number."))
       frag_name <- readline(prompt = "What is the name of this fragment? ")
       hsps_num <- as.numeric(readline(prompt = paste0("How many HSPS should the ", frag_name, " fragment be (default 1)? ")))
       if (is.na(hsps_num)){
         hsps_num <- 1
       }
-      if (hsps_num > 1){
-        print("Sorry, I'm not set up for multiple HSPS fragments yet. Do it yourself?")
-        hsps_num <- 1
-      }
-      frag_start <- as.numeric(readline(prompt = "What is the starting cutoff of the fragment? "))
-      graph_reads_map(save_it = F, set_line = frag_start)
-      good <- "n"
-      while (good != "y"){
-        good <- readline(prompt = "Does this look good (y/n)? ")
-        if (good != "y"){
-          frag_start <- as.numeric(readline(prompt = "What is the starting cutoff of the fragment? "))
-          graph_reads_map(save_it = F, set_line = frag_start)
+      graph_reads_map(file_name = datum[datum$hsps_count == hsps_num,], save_it = F)
+      for (k in c(1:hsps_num)){
+        frag_start <- as.numeric(readline(prompt = paste0("What is the starting cutoff of HSPS ",k, " of the ", frag_name, " fragment? ")))
+        graph_reads_map(file_name = datum[datum$hsps_count == hsps_num,], save_it = F, set_line = frag_start)
+        good <- "n"
+        while (good != "y"){
+          good <- readline(prompt = "Does this look good (y/n)? ")
+          if (good != "y"){
+            frag_start <- as.numeric(readline(prompt = paste0("What is the starting cutoff of HSPS ",k, " of the ", frag_name, " fragment? ")))
+            graph_reads_map(file_name = datum[datum$hsps_count == hsps_num,], save_it = F, set_line = frag_start)
+          }
         }
-      }
-      frag_end <- as.numeric(readline(prompt = "What is the ending cutoff of the fragment? "))
-      graph_reads_map(save_it = F, set_line = frag_end)
-      good <- "n"
-      while (good != "y"){
-        good <- readline(prompt = "Does this look good (y/n)? ")
-        if (good != "y"){
-          frag_end <- as.numeric(readline(prompt = "What is the ending cutoff of the fragment? "))
-          graph_reads_map(save_it = F, set_line = frag_end)
+        frag_end <- as.numeric(readline(prompt = paste0("What is the ending cutoff of HSPS ",k, " of the ", frag_name, " fragment? ")))
+        graph_reads_map(file_name = datum[datum$hsps_count == hsps_num,], save_it = F, set_line = frag_end)
+        good <- "n"
+        while (good != "y"){
+          good <- readline(prompt = "Does this look good (y/n)? ")
+          if (good != "y"){
+            frag_end <- as.numeric(readline(prompt = paste0("What is the ending cutoff of HSPS ",k, " of the ", frag_name, " fragment? ")))
+            graph_reads_map(file_name = datum[datum$hsps_count == hsps_num,], save_it = F, set_line = frag_end)
+          }
         }
+        frag_size <- as.numeric(readline(prompt = paste0("What is the minimum size of HSPS ",k, " of the ", frag_name, " fragment (max size is ",frag_end - frag_start ,")? ")))
+        datum[datum$hsps == k & datum$length >= frag_size & (datum$h_strand == "Plus" & datum$h_start >= frag_start & datum$h_end <= frag_end) | 
+                (datum$h_strand == "Minus" & datum$h_start <= frag_start & datum$h_end >= frag_end),]$fragment_label <- frag_name
       }
-      frag_size <- as.numeric(readline(prompt = "What is the minimum size the fragment should be? "))
-      datum[(datum$h_strand == "Plus" & datum$h_start >= frag_start & datum$h_end <= frag_end) | 
-              (datum$h_strand == "Minus" & datum$h_start <= frag_start & datum$h_end >= frag_end),]$fragment_label <- frag_name
-      
     }
   }
   graph_reads_map(datum, color_frag = T)
