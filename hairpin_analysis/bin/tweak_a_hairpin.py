@@ -17,7 +17,7 @@ parser.add_argument("-c", "--coding", help="If hairpin has coding, gives the pos
 parser.add_argument("-o", "--out", help="Name of output file (Default is 'data.csv')", default="data.csv")
 parser.add_argument("-u", "--uncertainty", help="Percent (0-1) of target delta G/Length sufficient for tweaking.", default=0.1)
 parser.add_argument("-F", "--Force_hairpin", help="If flagged, sequences always used as the 5' side of a generated hairpin.",  action='store_true')
-parser.add_argument("-C", "--ConserveSequence", help="If flagged, the input sequence cannot be mutated.",  action='store_true')
+parser.add_argument("-C", "--ConserveSequence", help="If flagged, the input sequence cannot be mutated.")
 parser.parse_args()
 args = parser.parse_args()
 runit = True
@@ -25,6 +25,8 @@ runit = True
 nt_set = ["A", "U", "G", "C"]
 ops_set = {"A":"U", "U":"A", "C":"G", "G":"C"}
 dG_table = {"GC":-2.54, "CG":-2.56, "AU":-0.29, "UA":-0.28, "GU":-0.03, "UG":-0.03}
+unFunSet = []
+
 codon_table = {
         'AUA':'I', 'AUC':'I', 'AUU':'I', 'AUG':'M',
         'ACA':'T', 'ACC':'T', 'ACG':'T', 'ACU':'T',
@@ -315,11 +317,18 @@ if args.max_APE:
         runit=False
 
 if args.ApicalLength:
+    ap_seq=""
     try:
         ap_length=int(args.ApicalLength)
     except:
-        print("Unable to parse given apical length. Defaulting to 5")
-        ap_length=5
+        tryIt=input("Apical input is detected as a string. Would you like to use this as the apical sequence (y/N)? ")
+        if tryIt.upper() == "Y":
+            ap_seq = args.ApicalLength
+            ap_seq = ap_seq.upper().replace('T', 'U')
+            ap_length=len(ap_seq)
+        else:
+            print("Disregarding the string input and using default (5) apical length.")
+            ap_length=5
 
 if args.max_paired_length:
     try:
@@ -338,6 +347,20 @@ if args.coding:
             print("\nUsing standard codon table to identify which positions can be changed starting at position "+args.coding+".")
     except:
         print("Unable to read given codon start. Aborting.")
+        runit=False
+
+if args.ConserveSequence:
+    try:
+        unfunPos=args.ConserveSequence.split(",")
+        for j in unfunPos:
+            thing=j.split("-")
+            if len(thing) == 1:
+                unFunSet.append(int(thing[0])-1)
+            elif len(thing) == 2:
+                for i in list(range(int(thing[0]), int(thing[1])+1)):
+                    unFunSet.append(i-1)
+    except:
+        print("Unable to parse the given conserved positions. Aborting.")
         runit=False
 
 if runit:
@@ -365,8 +388,11 @@ if runit:
                     working_seq = seqs[i].upper().replace('T', 'U')
                     apical=""
                     complement=""
-                    for j in range(0, ap_length):
-                        apical+=random.choice(nt_set)
+                    if ap_seq == "":
+                        for j in range(0, ap_length):
+                            apical+=random.choice(nt_set)
+                    else:
+                        apical+=ap_seq
                     for j in working_seq[::-1]:
                         # Randomize things based on estimated probability
                         check = random.randint(0,100)
@@ -419,8 +445,10 @@ if runit:
                                     fungible_positions[p+c] = list(set(fungible_positions[p+c]))
                 
             elif args.ConserveSequence:
-                for c in list(range(len(seqs[i])+1, len(working_seq))):
-                    fungible_positions[c]=nt_set
+                funNums = list(range(1,len(working_seq)+1))
+                for c in funNums:
+                    if c not in unFunSet:
+                        fungible_positions[c]=nt_set
             else:
                 for c in list(range(0, len(working_seq))):
                     fungible_positions[c]=nt_set
@@ -534,42 +562,45 @@ if runit:
                         while ape > max_ape:
                             #the_max = max(pes)
                             max_pos = pes.index(max(pes))
-                            possibles = df.loc[df.position == max_pos+1, 'possibles'].item().split("_")
-                            pairing = df.loc[df.position == max_pos+1, 'paired'].item()
-                            if pairing == "U":
-                                df.loc[df.position == max_pos+1, 'base'] = random.choice(possibles)
+                            if max_pos+1 in unFunSet:
+                                pes.remove(max(pes))
                             else:
-                                partner = df.loc[df.position == max_pos+1, 'partner'].item()
-                                if pairing == "GC":
-                                    pickIt = random.choice(["AU", "UA"])
-                                    df.loc[df.position == max_pos+1, 'base'] = pickIt[0]
-                                    df.loc[df.position == partner, 'base'] = pickIt[1]
-                                elif pairing == "AU":
-                                    pickIt = random.choice(["GC", "CG"])
-                                    df.loc[df.position == max_pos+1, 'base'] = "C"
-                                    df.loc[df.position == max_pos+1, 'base'] = pickIt[0]
-                                    df.loc[df.position == partner, 'base'] = pickIt[1]
+                                possibles = df.loc[df.position == max_pos+1, 'possibles'].item().split("_")
+                                pairing = df.loc[df.position == max_pos+1, 'paired'].item()
+                                if pairing == "U":
+                                    df.loc[df.position == max_pos+1, 'base'] = random.choice(possibles)
                                 else:
-                                    if subSeq[max_pos == "U"]:
+                                    partner = df.loc[df.position == max_pos+1, 'partner'].item()
+                                    if pairing == "GC":
+                                        pickIt = random.choice(["AU", "UA"])
+                                        df.loc[df.position == max_pos+1, 'base'] = pickIt[0]
+                                        df.loc[df.position == partner, 'base'] = pickIt[1]
+                                    elif pairing == "AU":
+                                        pickIt = random.choice(["GC", "CG"])
                                         df.loc[df.position == max_pos+1, 'base'] = "C"
+                                        df.loc[df.position == max_pos+1, 'base'] = pickIt[0]
+                                        df.loc[df.position == partner, 'base'] = pickIt[1]
                                     else:
-                                        df.loc[df.position == max_pos+1, 'base'] = "A"
-                                
-                            subSeq=""
-                            for b in range(1,max(df.position)+1):
-                                subSeq+=df.loc[df.position == b, 'base'].item()
-                            structure, current_dg, pes, ape = fold_and_return(subSeq)
-                            box, apical, rCounter, maxPairs = split_and_knit(subSeq, structure)
-                            bulge_counts = bulge_count(structure, subSeq)
-                            df = new_split(sequence=subSeq, box=box, cons=fungible_positions, codes=condonConsiderations)
-                            if counter > 100:
-                                ticket+=counter
-                                keepIt = input("Have tried "+str(ticket)+" permutations. The current APE is at "+str(round(ape, 2))+". Should the function keep trying (y/N)? ")
-                                if keepIt.upper() == "Y":
-                                    counter = 0
-                                else:
-                                    break
-                            counter+=1
+                                        if subSeq[max_pos == "U"]:
+                                            df.loc[df.position == max_pos+1, 'base'] = "C"
+                                        else:
+                                            df.loc[df.position == max_pos+1, 'base'] = "A"
+                                    
+                                subSeq=""
+                                for b in range(1,max(df.position)+1):
+                                    subSeq+=df.loc[df.position == b, 'base'].item()
+                                structure, current_dg, pes, ape = fold_and_return(subSeq)
+                                box, apical, rCounter, maxPairs = split_and_knit(subSeq, structure)
+                                bulge_counts = bulge_count(structure, subSeq)
+                                df = new_split(sequence=subSeq, box=box, cons=fungible_positions, codes=condonConsiderations)
+                                if counter > 100:
+                                    ticket+=counter
+                                    keepIt = input("Have tried "+str(ticket)+" permutations. The current APE is at "+str(round(ape, 2))+". Should the function keep trying (y/N)? ")
+                                    if keepIt.upper() == "Y":
+                                        counter = 0
+                                    else:
+                                        break
+                                counter+=1
                         print("Exiting PE adjustment. Current APE is "+str(round(ape,2))+".")
                         if current_dg >= max_allowed and current_dg <= min_allowed and bulge_counts["apicals"] == 1:
                             print("Delta G of the hairpin is still within parameters ("+str(round(current_dg, 2))+"). All parameters met.\n")
