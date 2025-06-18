@@ -406,7 +406,7 @@ if runit:
                     working_seq+=apical+complement
                     structure, current_dg, pes, ape = fold_and_return(working_seq)
                     bulge_counts = bulge_count(structure, working_seq)
-                    if bulge_counts["apicals"] == 1 and current_dg >= max_allowed and current_dg <= min_allowed and structure.startswith("((") and ape < max_ape:
+                    if bulge_counts["apicals"] == 1 and current_dg >= max_allowed and current_dg <= min_allowed and structure.startswith("((((") and ape < max_ape:
                         allGood = True
                     counter+=1
                     if counter%500 == 0:
