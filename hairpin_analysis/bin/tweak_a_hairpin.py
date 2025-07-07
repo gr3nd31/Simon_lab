@@ -111,26 +111,30 @@ def read_fasta(fastafile):
         for i in ls:
              sequences.append(i.rstrip("\n"))
 
-    seq_id = []
-    for i in sequences:
-        if len(i) > 0:
-            if i[0] == ">":
-                seq_id.append(i)
+    if len(sequences) > 1:
+        seq_id = []
+        for i in sequences:
+            if len(i) > 0:
+                if i[0] == ">":
+                    seq_id.append(i)
 
-    seq_id_index = []
-    for i in range(len(seq_id)):
-        seq_id_index.append(sequences.index(seq_id[i]))
+        seq_id_index = []
+        for i in range(len(seq_id)):
+            seq_id_index.append(sequences.index(seq_id[i]))
 
-    seq_dic = {}
-    for i in range(len(seq_id_index)):
-        if i == (len(seq_id_index) - 1):
-            seq_dic[seq_id[i]] = sequences[seq_id_index[i]+1:]
-        else:
-            seq_dic[seq_id[i]] = sequences[seq_id_index[i]+1:seq_id_index[i+1]]
+        seq_dic = {}
+        for i in range(len(seq_id_index)):
+            if i == (len(seq_id_index) - 1):
+                seq_dic[seq_id[i]] = sequences[seq_id_index[i]+1:]
+            else:
+                seq_dic[seq_id[i]] = sequences[seq_id_index[i]+1:seq_id_index[i+1]]
 
-    seq_dic_2 = {}
-    for keys, values in seq_dic.items():
-        seq_dic_2[keys] = "".join(values)
+        seq_dic_2 = {}
+        for keys, values in seq_dic.items():
+            seq_dic_2[keys] = "".join(values)
+    elif len(sequences) == 1:
+        print("FASTA file not given. Assuming first line is a sequence and using placeholder name of 'sequence'")
+        seq_dic_2 = {"sequence": sequences[0]}
 
     return seq_dic_2
 
@@ -296,7 +300,6 @@ if args.entropy:
         runit=False
 
 if args.sequence:
-    seqs = read_fasta(args.sequence)
     try:
         seqs = read_fasta(args.sequence)
     except:
