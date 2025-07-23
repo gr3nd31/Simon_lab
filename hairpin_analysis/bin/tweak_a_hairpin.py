@@ -18,6 +18,7 @@ parser.add_argument("-o", "--out", help="Name of output file (Default is 'data.c
 parser.add_argument("-u", "--uncertainty", help="Percent (0-1) of target delta G/Length sufficient for tweaking.", default=0.1)
 parser.add_argument("-F", "--Force_hairpin", help="If flagged, sequences always used as the 5' side of a generated hairpin.",  action='store_true')
 parser.add_argument("-C", "--ConserveSequence", help="If flagged, the input sequence cannot be mutated.")
+parser.add_argument("-S", "--Subset", help="List of positions that should be changed. Example format: 12,15,20-30,60-70")
 parser.parse_args()
 args = parser.parse_args()
 runit = True
@@ -205,6 +206,7 @@ def new_split(sequence, box, cons, codes):
         fox["partner"].append("test")
         fox["set"].append(0)
         if counter-1 in cons.keys():
+            #print(counter-1)
             fox["fungible"].append("Yes")
         else:
             fox["fungible"].append("No")
@@ -366,6 +368,21 @@ if args.ConserveSequence:
         print("Unable to parse the given conserved positions. Aborting.")
         runit=False
 
+if args.Subset:
+    try:
+        aList =[]
+        ks = args.Subset.split(",")
+        for i in ks:
+            if "-" in i:
+                z=i.split("-")
+                for j in range(int(z[0])-1, int(z[1])):
+                    aList.append(j)
+            else:
+                aList.append(int(i))
+    except:
+        print("Unable to read input list. Try again using the correct format. Aborting")
+        runit=False
+
 if runit:
     for i in seqs:
         for n in range(0,replNum):
@@ -451,6 +468,11 @@ if runit:
                 funNums = list(range(1,len(working_seq)+1))
                 for c in funNums:
                     if c not in unFunSet:
+                        fungible_positions[c]=nt_set
+            elif args.Subset:
+                funNums = list(range(0,len(working_seq)))
+                for c in funNums:
+                    if c in aList:
                         fungible_positions[c]=nt_set
             else:
                 for c in list(range(0, len(working_seq))):
