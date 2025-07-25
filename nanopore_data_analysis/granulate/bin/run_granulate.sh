@@ -22,7 +22,7 @@ makeblastdb -in db.fasta -dbtype nucl
 cd ../
 
 # Runs a preliminary alignment
-echo "Running alignment..."
+echo "Running initial alignment..."
 blastn -db references/db.fasta -query renamed_reads.fasta -outfmt 6 -out db_aligned.tsv
 rm -r references/db.fasta*
 
@@ -56,6 +56,7 @@ do
                     python3 ../../bin/granulate.py -a $i.json -g ref.fasta
                     # Reference db files are removed
                     rm ref.fasta*
+                    rm $i.json
                 fi
             # if the reference folder already exists, it is skipped
             else
