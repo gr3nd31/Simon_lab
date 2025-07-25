@@ -366,13 +366,11 @@ if runit:
         print("Aligned read errors: "+str(errors)+" ("+str(100*round(errors/aligned_reads,2))+"%)")
         print("\n")
         print("Generating genome df...")
-        genome_df="Position_num,Position_nt,number_hit,Other_nt,number_mismatched,number_deleted,number_inserted,inserted_nt\n"
-        for i in genome_dict:
-            genome_df=genome_df+i+","+genome_dict[i][0]+","+str(genome_dict[i][1])+",G:"+str(genome_dict[i][2]["G"])+"_C:"+str(genome_dict[i][2]["C"])+"_A:"+str(genome_dict[i][2]["A"])+"_T:"+str(genome_dict[i][2]["T"])+"_U:"+str(genome_dict[i][2]["U"])+","+str(genome_dict[i][3])+","+str(genome_dict[i][4])+","+str(genome_dict[i][5])+",G:"+str(genome_dict[i][6]["G"])+"_C:"+str(genome_dict[i][6]["C"])+"_A:"+str(genome_dict[i][6]["A"])+"_T:"+str(genome_dict[i][6]["T"])+"_U:"+str(genome_dict[i][6]["U"])+"_E:"+str(genome_dict[i][6]["E"])+"\n"
-
-        print("Writing files...")
         with open(save_locale+prefixed+'genome_df.csv', 'w') as f:
-            f.write(genome_df)
+            f.write("Position_num,Position_nt,number_hit,Other_nt,number_mismatched,number_deleted,number_inserted,inserted_nt\n")
+            for i in genome_dict:
+                tick=i+","+genome_dict[i][0]+","+str(genome_dict[i][1])+",G:"+str(genome_dict[i][2]["G"])+"_C:"+str(genome_dict[i][2]["C"])+"_A:"+str(genome_dict[i][2]["A"])+"_T:"+str(genome_dict[i][2]["T"])+"_U:"+str(genome_dict[i][2]["U"])+","+str(genome_dict[i][3])+","+str(genome_dict[i][4])+","+str(genome_dict[i][5])+",G:"+str(genome_dict[i][6]["G"])+"_C:"+str(genome_dict[i][6]["C"])+"_A:"+str(genome_dict[i][6]["A"])+"_T:"+str(genome_dict[i][6]["T"])+"_U:"+str(genome_dict[i][6]["U"])+"_E:"+str(genome_dict[i][6]["E"])+"\n"
+                f.write(tick)
 
     else:
         print("No reads found :-(")
