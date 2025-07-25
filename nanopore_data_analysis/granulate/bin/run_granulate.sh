@@ -14,6 +14,7 @@ cd references
 # Converts T's to U's and concats references
 for i in $(ls);
 do
+    echo  >> $i
     cat $i | sed 's/U/T/g' >> db.fasta
 done
 # Makes a combined database
