@@ -93,7 +93,7 @@ def bulge_count(dotBra, rna):
     return b_c
 
 parser = argparse.ArgumentParser()
-parser.add_argument("-n", "--numberOfIterations", help="Number of time to generate the hairpin")
+parser.add_argument("-n", "--numberOfIterations", help="Number of time to generate the hairpin", default=1)
 parser.add_argument("-s", "--sequence", help = "Path to the sequence file.") #
 parser.add_argument("-A", "--Anchor", help='Whether the miRNA targeting site should be anchored to the apical loop (A) or the base of the hairpin (B).', 
                     default="A", choices=['A', 'B'])
@@ -169,6 +169,9 @@ if runIt:
     for i in fastas.keys():
         print("Generating hairpins of sequence: "+i[1:])
         fullSeq=fastas[i]
+        fullSeq=fullSeq.upper()
+        if "T" in fullSeq:
+            fullSeq=fullSeq.replace("T", "U")
 
         if (len(fullSeq)-33)%21 != 0:
             pause=input("Given sequence doesn't match the 22+11+21*n format of a tasiRNA sequence. Continue (Y/n)? ")
