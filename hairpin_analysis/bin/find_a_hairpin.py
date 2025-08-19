@@ -1,10 +1,14 @@
 import re
 import argparse
+import RNA
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-s", "--sequence", help = "Path to the sequence and structure file") #
+parser.add_argument('-S', "--Structure", help = "Add stucture to the output file.", action = 'store_true')
 parser.add_argument('-m', '--minLength', help="Minimum length a structure should be. Recommended is 11.")
 parser.add_argument('-b', '--bonds', help="Minimum number of pairs required. Default minimum is 3.")
+parser.add_argument('-F', '--Force', help='If flagged, the subsequence is again folded to verify the sequence can fold on its own and includes no additional sequences.',
+                     action='store_true')
 parser.add_argument('-f', '--find', help="Regular expression for the structure to be found. Default is a simple hairpin 'C+C+[CU]+C+U+G+[GU]+G+G+'. A YSS would be 'C+[CU]+U+G+[GU]+C+[CU]+G+[GU]+G+'")
 parser.add_argument('-p', '--prefix', help="Prefix to be added to the sequence.")
 parser.add_argument("-o", "--out", help="Name of output file") #
@@ -50,7 +54,7 @@ else:
 if args.minLength:
     minLength = int(args.minLength)
 else:
-    minLength = 0
+    minLength = 8
 
 # Defines the minimum number of basepairs
 if args.bonds:
@@ -82,6 +86,9 @@ if args.out:
 else:
     outFile = "sequences.fasta"
 
+if args.Force:
+    print("Checking substructues to verify correct extraction.")
+
 #Checks is the len of the structure file is the same as a sequence
 if len(sequence) != len(structure):
     print("Sequence and structure are not the same length. Aborting.")
@@ -99,41 +106,34 @@ if runIt:
         if len(m.group()) >= minLength:
             # Defines the start and end positions to be extracted
             start = m.start()
+            dStart = start
             end = m.end()
+            dEnd = end
             # Splits the substructure into the 5prime and 3prime segments
-            trick = re.split("CU+G", structure[start:end])
-            # Proceeds if there is only one apical loop 
-            if len(trick) == 2:
-                # Pulls the 5prime and 3prime ends and trims any excess
-                p5 = trick[0]
-                p3 = trick[1]
-                if p5.count("C") > p3.count("G"):
-                    clock = p3.count("G")+1
-                    for i in p5[::-1]:
-                        if i == "C":
-                            clock-=1
-                            if clock <= 0:
-                                start+=1
-                        elif i == "U" and clock <= 1:
-                            start+=1
-                elif p5.count("C") < p3.count("G"):
-                    clock = p5.count("C")+1
-                    for i in p3:
-                        if i == "G":
-                            clock-=1
-                            if clock <= 0:
-                                end-=1
-                        elif i == "U" and clock <= 1:
-                            end-=1
-                else:
-                    start = m.start()
-                    end = m.end()
+            if args.Force:
+                fc = RNA.fold_compound(sequence[start:end])
+                fc.pf()
+                subStructure = fc.mfe()[0].replace(",", ".")
+                subStructure = subStructure.replace(".", "U")
+                subStructure = subStructure.replace("(", "C")
+                subStructure = subStructure.replace(")", "G")
+                for n in p.finditer(subStructure):
+                    if len(n.group()) >= minLength and subStructure[n.start():n.end()].count("C") >= minBonds:
+                        start = n.start()+dStart
+                        end = n.end()+dStart
+                        finalOut+=">"+prefix+"_"+str(start+1)+"_"+str(end)+"\n"
+                        finalOut+=sequence[start:end]+"\n"
+                        if args.Structure:
+                            finalOut+=subStructure[n.start():n.end()].replace("U",".").replace("C","(").replace("G",")")+"\n"
+                    else:
+                        continue
+
             #If the trimmed sequence is long enough and contains enough basepairs, the substructure sequence is pulled.
-            if len(sequence[start:end]) >= minLength and structure[start:end].count("C") >= minBonds:
-                finalOut+=">"+prefix+"_"+str(start)+"_"+str(end)+"\n"
+            elif len(sequence[start:end]) >= minLength and structure[start:end].count("C") >= minBonds:
+                finalOut+=">"+prefix+"_"+str(start+1)+"_"+str(end)+"\n"
                 finalOut+=sequence[start:end]+"\n"
-                # Uncomment to also record the structure
-                #finalOut+=structure[start:end].replace("U",".").replace("C","(").replace("G",")")+"\n"
+                if args.Structure:
+                    finalOut+=structure[start:end].replace("U",".").replace("C","(").replace("G",")")+"\n"
     # If structures were found, they are saved
     if len(finalOut) > 0:
         with open(outFile, 'a') as f:
