@@ -1,0 +1,22 @@
+#! /bin/bash
+
+upps=${1^^}
+#upps=${echo upps | sed 's/U/T/g'}
+foo=$(echo $upps | rev)
+tick=""
+for (( i=0; i<${#foo}; i++ )); do
+    tim="${foo:$i:1}"
+    if [ "$tim" == "A" ]; then
+      tick=$tick"T"
+    elif [ "$tim" == "T" ]; then
+      tick=$tick"A"
+    elif [ "$tim" == "G" ]; then
+      tick=$tick"C"
+    elif [ "$tim" == "C" ]; then
+      tick=$tick"G"
+    elif [ "$tim" == "U" ]; then
+      tick=$tick"A"
+    fi
+
+done
+echo '5`- '$tick' -3`'
