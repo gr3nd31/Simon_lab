@@ -44,8 +44,14 @@ graph_coverage_map <- function(file_name="genome_df.csv",
                        save_them=TRUE,
                        log_transform = F,
                        graph_skew = FALSE,
+                       set_line = F,
                        prefix=""){
-  datum <- read_csv(file_name, show_col_types = F)
+  if (typeof(file_name) == "character"){
+    datum <- read_csv(file_name, show_col_types = F)
+  } else if (typeof(file_name) == "list"){
+    datum <- file_name
+  }
+  
   if (!"plume_deleted" %in% names(datum) &
       !"plume_mismatched" %in% names(datum) &
       !"plume_inserted" %in% names(datum)){
@@ -85,6 +91,13 @@ graph_coverage_map <- function(file_name="genome_df.csv",
       labs(x = "Alignment Position", y = "Coverage")+
       theme_bw()+
       theme(legend.position = "top")
+    if (set_line){
+      if (typeof(set_line) == "double"){
+        draft <- draft+
+          geom_vline(xintercept = set_line, linewidth = 2, linetype = 2, color = "grey")
+      }
+    }
+    
     print(draft)
     if(save_them){
       ggsave(paste0(prefix, "coverage.png"), dpi=500)

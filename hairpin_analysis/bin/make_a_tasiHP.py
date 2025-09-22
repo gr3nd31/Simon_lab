@@ -212,8 +212,8 @@ if runIt:
                 tick+=str(repWindow)+"-"
                 foundRepeat=False
                 repList=[]
-                for i in range(0, len(hp_seq)):
-                    subRep=hp_seq[i:i+repWindow]
+                for j in range(0, len(hp_seq)):
+                    subRep=hp_seq[j:j+repWindow]
                     if len(subRep) >= repWindow:
                         p=[match.start() for match in re.finditer(subRep, hp_seq)]
                         if len(p) > 1:
