@@ -18,5 +18,14 @@ for (( i=0; i<${#foo}; i++ )); do
       tick=$tick"A"
     fi
 
+if [ "$2" == "-u" ]; then
+  tick=$(echo $tick | sed 's/T/U/g')
+fi
+
 done
 echo '5`- '$tick' -3`'
+
+if command -v xclip > /dev/null; then
+  echo $tick | xclip -selection clipboard
+  echo "Copied to clipboard"
+fi
