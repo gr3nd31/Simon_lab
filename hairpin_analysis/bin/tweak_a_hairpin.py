@@ -23,11 +23,14 @@ parser.parse_args()
 args = parser.parse_args()
 runit = True
 
+# Set to randomly pull from
 nt_set = ["A", "U", "G", "C"]
+# Dictionary to find complements
 ops_set = {"A":"U", "U":"A", "C":"G", "G":"C"}
-dG_table = {"GC":-2.54, "CG":-2.56, "AU":-0.29, "UA":-0.28, "GU":-0.03, "UG":-0.03}
+# Set of positions that cannot be changed
 unFunSet = []
 
+# Codon usage table
 codon_table = {
         'AUA':'I', 'AUC':'I', 'AUU':'I', 'AUG':'M',
         'ACA':'T', 'ACC':'T', 'ACG':'T', 'ACU':'T',
@@ -47,6 +50,7 @@ codon_table = {
         'UGC':'C', 'UGU':'C', 'UGA':'_', 'UGG':'W',
         }
 
+# Get positions of paired partner
 def get_pairs(dotBra, rna):
     braDot = dotBra[::-1]
 
@@ -80,6 +84,7 @@ def get_pairs(dotBra, rna):
                     hitsLib['other'].append(pair)
     return hitsLib
 
+# Function to count apical loops and bulges
 def bulge_count(dotBra, rna):
     b_c = {"apicals": 0,
            "apical_local": "",
@@ -101,6 +106,7 @@ def bulge_count(dotBra, rna):
         b_c["rB_local"]+=rna[found.start()+1:found.end()-1]+";"
     return b_c
 
+# Fasta reading function
 def read_fasta(fastafile):
     """
     Reads a fasta file and returns a dictionary with sequence
@@ -139,6 +145,7 @@ def read_fasta(fastafile):
 
     return seq_dic_2
 
+# Function to fold RNA and return variables
 def fold_and_return(sequence):
     folded = RNA.fold_compound(sequence)
     folded.pf()
@@ -148,6 +155,7 @@ def fold_and_return(sequence):
     ape = sum(pes)/len(pes)
     return structure, current_dg, pes, ape
 
+# Splits structure into paired partners
 def split_and_knit(sequence, structure):
     box = {}
     paired=[]
@@ -185,6 +193,7 @@ def split_and_knit(sequence, structure):
     unpairs.append(bCount)
     return box, apical, rCounter, max_pair
 
+# Function to find repeat sequences
 def repeat_finder(sequence, repWindow):
     repList={}
     for r in range(0, len(sequence)):
@@ -196,6 +205,7 @@ def repeat_finder(sequence, repWindow):
                     repList[subRep] = p
     return repList
 
+# Makes dataframe of the positions, paired partners, and possible changes/codons
 def new_split(sequence, box, cons, codes):
     fox = {"position":[],"base":[],"paired":[],"partner":[], "set":[],"fungible":[], "possibles":[], "codonCons":[]}
     counter=1
@@ -264,6 +274,7 @@ def new_split(sequence, box, cons, codes):
             
     return box_df
 
+# Defines how close the delta G should be from the desired parameter
 if args.uncertainty:
     try:
         threshold=float(args.uncertainty)
@@ -271,6 +282,7 @@ if args.uncertainty:
         print("Unable to read given uncertainty. Aborting")
         runit=False
 
+# Defines the number of iterations to return
 if args.number:
     try:
         replNum=int(args.number)
@@ -291,6 +303,7 @@ else:
     repWindow=0
     foundRepeat=False
 
+# Define the target delta G
 if args.entropy:
     try:
         target_dG = float(args.entropy)
@@ -301,6 +314,7 @@ if args.entropy:
         print("Unable to read given entropy value. Aborting.")
         runit=False
 
+# Pulls the fasta file
 if args.sequence:
     try:
         seqs = read_fasta(args.sequence)
@@ -311,6 +325,7 @@ else:
     print("Fasta file not given. Use '-s' flag and path to file.")
     runit=False
 
+#Define the maximum APE
 if args.max_APE:
     try:
         max_ape = float(args.max_APE)
@@ -321,6 +336,7 @@ if args.max_APE:
         print("Unable to read given APE value. Aborting")
         runit=False
 
+# Define the size of the apical loop OR the sequence to be used in the apical loop
 if args.ApicalLength:
     ap_seq=""
     try:
@@ -335,6 +351,7 @@ if args.ApicalLength:
             print("Disregarding the string input and using default (5) apical length.")
             ap_length=5
 
+# Define value of maximum number to consecutive base pairs.
 if args.max_paired_length:
     try:
         max_paired = int(args.max_paired_length)
@@ -342,6 +359,7 @@ if args.max_paired_length:
         print("Unable to read given max paired length. Aborting")
         runit = False
 
+# Flag to tell script to conserve coding beginning at a certain position
 if args.coding:
     try:
         codon_start = int(args.coding)
@@ -354,6 +372,7 @@ if args.coding:
         print("Unable to read given codon start. Aborting.")
         runit=False
 
+# Flag to tell script to conserve the input sequence
 if args.ConserveSequence:
     try:
         unfunPos=args.ConserveSequence.split(",")
@@ -368,6 +387,7 @@ if args.ConserveSequence:
         print("Unable to parse the given conserved positions. Aborting.")
         runit=False
 
+# Reads list of positions that CAN be changed
 if args.Subset:
     try:
         aList =[]
@@ -383,36 +403,56 @@ if args.Subset:
         print("Unable to read input list. Try again using the correct format. Aborting")
         runit=False
 
+# Assuming all the inputs are correct, the script runw
 if runit:
+    # Iterates through the fasta sequences
     for i in seqs:
+        # Repeats for the number of requested iterations
         for n in range(0,replNum):
+            # Defines an initial blank apical sequence
             apical = ""
+            # Tells user which sequence and iteration is being run
             print("\nWorking on sequence: "+i[1:]+" iteration "+str(n+1))
+            # Converts sequence to RNA and makes uppercase
             working_seq = seqs[i].upper().replace('T', 'U')
+            # Gets initial structure and thermodynamic values to see if the sequence is *already* a hairpin
             structure, current_dg, pes, ape = fold_and_return(working_seq)
             # Count apicals to check its a hairpin
             bulge_counts = bulge_count(structure, working_seq)
+            # if there is not a single apical loop or if the user has requested to make a new hairpin from the sequence, a new hairpin is generated around the given sequence
             if (bulge_counts["apicals"] != 1 or args.Force_hairpin) and not args.coding:
+                # Defines a range of acceptable delta G/Length values
                 target_G = ((len(working_seq)*2)+5)*target_dG
                 max_allowed = target_G+(target_G*threshold)
                 min_allowed = target_G-(target_G*threshold)
+                # Initiates a variabel to determine when all parameter threshold are met
                 allGood = False
+                # Alerts user that a new hairpin is being generated
                 if bulge_counts["apicals"] != 1 and not args.Force_hairpin:
                     print("Given sequence is not predicted to form a hairpin. Using sequence to form a hairpin.")
                 else:
                     print("Duplicating sequence to form a hairpin.")
+                # Estimates a percent complementarity to achieve a given deltaG/Length based on the linear regression of deltaG/Length and percent complementarity
                 basecompl = round((target_dG-0.248)/-1.044580, 2)
                 print("Based on the target dG/Length ratio, the hairpin should have a "+str(basecompl*100)+"% complementarity.")
+                # Initiates counter variable so the user can be alerted if a given sequence should be stopped
                 counter = 0
+                # while loop until all parameters are met
                 while not allGood:
+                    # Refreshes the working sequence
                     working_seq = seqs[i].upper().replace('T', 'U')
+                    # Generates a new blank apical loop
                     apical=""
+                    # Generates a new complement sequence
                     complement=""
+                    # If a specific apical sequence has not been requested, it is randomly generated
                     if ap_seq == "":
                         for j in range(0, ap_length):
                             apical+=random.choice(nt_set)
                     else:
                         apical+=ap_seq
+
+                    # A complementary sequence is generated that randomly generate mismatches based on the calculated complementarity
                     for j in working_seq[::-1]:
                         # Randomize things based on estimated probability
                         check = random.randint(0,100)
@@ -423,36 +463,48 @@ if runit:
                             while possibility == j:
                                 possibility=random.choice(nt_set)
                             complement+=possibility
+                    # assembles the hairpin sequence
                     working_seq+=apical+complement
+                    # Folds the generated hairpin to get structure and thermodynamic values
                     structure, current_dg, pes, ape = fold_and_return(working_seq)
+                    # Records apical loop and bulge information
                     bulge_counts = bulge_count(structure, working_seq)
+                    # If the thermodynamic values are within the defined limits, shows a strongly paired base, and only has a single apical loop, the sequence is completed and the loop is broken
                     if bulge_counts["apicals"] == 1 and current_dg >= max_allowed and current_dg <= min_allowed and structure.startswith("((((") and ape < max_ape:
                         allGood = True
+                    # Increase counter
                     counter+=1
+                    # If iteration has occured at increments of 500, the user is given the chance to break the loop manually
                     if counter%500 == 0:
                         cont = input("Attempted "+str(counter)+" iterations to match delta G. Continue (y/n)? ")
                         if cont.lower() == "n":
                             allGood=True
 
+            # Thermodynamic parameters are reported to the user
             target_G = len(working_seq)*target_dG
             max_allowed = target_G+(target_G*threshold)
             min_allowed = target_G-(target_G*threshold)
             print("Target delta G: "+str(round(target_G,2))+" ("+str(round(min_allowed, 2))+" - "+str(round(max_allowed, 2))+", ratio:"+str(target_dG)+" delta G/length)")
 
+            # Information about the pairing of each base is obtained
             box, apical, rCounter, maxPairs = split_and_knit(working_seq, structure)
             subSeq = working_seq
 
             # Identify which positions can be changed
             fungible_positions = {}
             condonConsiderations=[]
-            #print(working_seq)
+            # If coding must be maintained, the potential positions that can be altered are flagged
             if args.coding:
+                # iterate through codons
                 for p in range(codon_start-1,len(working_seq),3):
                     codon=working_seq[p:p+3]
                     if len(codon) == 3:
+                        # Get the possible codons for that amino acid
                         keys = [key for key, val in codon_table.items() if val == codon_table[codon]]
                         condonConsiderations.append([codon_table[codon],[p, p+1, p+2], keys])
+                        # If the number of possible codons is greater than one, the possibilities are pulled
                         if len(keys) > 1:
+                            # Possible bases of each position are pulled
                             for c in range(0,3):
                                 for k in keys:
                                     if k[c] != codon[c]:
@@ -463,22 +515,27 @@ if runit:
                                 if p+c in fungible_positions.keys():
                                     fungible_positions[p+c].append(codon[c])
                                     fungible_positions[p+c] = list(set(fungible_positions[p+c]))
-                
+            
+            # If given sequence must be conserved, the input positions are flagged to not be changed
             elif args.ConserveSequence:
                 funNums = list(range(1,len(working_seq)+1))
                 for c in funNums:
                     if c not in unFunSet:
                         fungible_positions[c]=nt_set
+            # If specific positions are flagged as changeable, those positions are added the list of positions to be altered
             elif args.Subset:
                 funNums = list(range(0,len(working_seq)))
                 for c in funNums:
                     if c in aList:
                         fungible_positions[c]=nt_set
+            # otherwise, all lists are considered fungible
             else:
                 for c in list(range(0, len(working_seq))):
                     fungible_positions[c]=nt_set
 
+            # Tells user the initial thermodynamic parameters
             print("Initial delta G is "+str(round(current_dg,2))+" (dG/Length: "+str(round(current_dg/len(subSeq),2))+" kilocalories/mole/nt.)")
+            # If the desired values are not yet met, the user is altered
             if current_dg <= max_allowed or current_dg >= min_allowed:
                 print("Initial hairpin requires delta G tweaking.")
                 tweak_dG = True
@@ -490,11 +547,16 @@ if runit:
 #----------------------------------------------------------------------------- Tweak delta G
             # now we change pairing to get delta G right
             if tweak_dG:
+                # Counter initiated/reset
                 counter = 0
                 ticket = 0
                 initTry = 100
+                # while loop until deltaG is allowed or the structure is no longer a hairpin
                 while current_dg <= max_allowed or current_dg >= min_allowed or bulge_counts["apicals"] != 1:
+                    # Variable to track when changes are made
                     changed=False
+                    # Dictionary of pairs/unpaired positions are generated
+                    # This allows the script to make or break bonds to tweak teh delta G
                     gc={}
                     au={}
                     gu={}
@@ -510,16 +572,19 @@ if runit:
                         else:
                             if len(box[b][3]) > 0 and len(box[b][4]) > 0:
                                 unpaired[b]=box[b]
+
+                    # If the deltaG is too low, basepaired positions are selected
                     if current_dg <= max_allowed:
                         trix = df.loc[(df.fungible == "Yes") & (df.paired != "U")]
                         if len(trix) > 0:
                             trix = trix[trix.position == random.choice(list(trix.position))]
-
+                    # If the deltaG is too high, unpaired positions are selected
                     elif current_dg >= min_allowed:
                         trix = df.loc[(df.fungible == "Yes") & (df.paired == "U")]
 
                     while len(trix) > 0:
                         # Get random unpaired position that share a box
+                        # If coding, the codon is changed
                         if args.coding:
                             trix = trix[trix.position == random.choice(list(trix.position))]
                             subSeq=""
@@ -531,6 +596,7 @@ if runit:
                                     df.loc[df.position == gym, 'base'] = possibles[b]
                                 trix = trix[trix.position != x]
                                 changed=True
+                        # Otherwise, the base is changed randomly
                         else:
                             subSeq=""
                             for x in list(trix.position):
@@ -538,15 +604,18 @@ if runit:
                                 df.loc[df.position == x, 'base'] = random.choice(possibles)
                                 trix = trix[trix.position != x]
                             changed=True
+                        # The sequence is put back together from the dataframe
                         for b in range(1,max(df.position)+1):
                             subSeq+=df.loc[df.position == b, 'base'].item()
 
+                    # New sequence folded and pairing partners re-evaluated
                     structure, current_dg, pes, ape = fold_and_return(subSeq)
                     box, apical, rCounter, maxPairs = split_and_knit(subSeq, structure)
                     bulge_counts = bulge_count(structure, subSeq)
                     df = new_split(sequence=subSeq, box=box, cons=fungible_positions, codes=condonConsiderations)
                     counter+=1
 
+                    # User is allowed to break the loop every 100 iterations
                     if counter >= initTry and bulge_counts["apicals"] == 1:
                         ticket+=counter
                         keepIt = input("Have tried "+str(ticket)+" permutations. The current delta G is at "+str(round(current_dg, 2))+". Should the function keep trying (y/N)? ")
@@ -554,6 +623,7 @@ if runit:
                             counter = 0
                         else:
                             break
+                    # If the mutations create a branched structure, the user can 'reset' the sequence 
                     elif counter >= initTry and bulge_counts["apicals"] > 1:
                         ticket+=counter
                         keepIt = input("Have tried "+str(ticket)+" permutations. The current delta G is at "+str(round(current_dg, 2))+" but multiple apical loops "+str(bulge_counts["apicals"])+" detected. Should the sequence be reset to the original (y/N)? ")
@@ -568,6 +638,7 @@ if runit:
                             if keepIt.upper() != "Y":
                                 break
                         counter = 0
+                    # if thermodynamics are achieved, the loop is broken
                     else:
                         if current_dg >= max_allowed and current_dg <= min_allowed and bulge_counts["apicals"] == 1:
                             #print("Appropriate delta G has been achieved. Checking PE values.")
@@ -576,6 +647,7 @@ if runit:
             else:
                 print("Delta G already appropriate. Checking PE values.\n")
 #----------------------------------------------------------------------------- Tweak PE
+            # If the APE is too high, the highest PE bases are mutated
             if ape > max_ape:
                 peGO = input("Average postitional entropy is too high ("+str(round(ape,2))+"). Would you like to try decreasing PE (CAUTION: CHANGING HIGH PE BASES MAY CHANGE THE DELTA G)? (y/N) ")
                 if peGO.upper() == "Y":
@@ -585,15 +657,18 @@ if runit:
                         counter=0
                         ticket=0
                         while ape > max_ape:
-                            #the_max = max(pes)
+                            # The highest PE base is identified
                             max_pos = pes.index(max(pes))
+                            # if the highest PE base cannot be changed, it is ignored
                             if max_pos+1 in unFunSet:
                                 pes.remove(max(pes))
                             else:
                                 possibles = df.loc[df.position == max_pos+1, 'possibles'].item().split("_")
                                 pairing = df.loc[df.position == max_pos+1, 'paired'].item()
+                                # If the highest PE base is unpaired, it is randomly mutated
                                 if pairing == "U":
                                     df.loc[df.position == max_pos+1, 'base'] = random.choice(possibles)
+                                # If the highest PE base is paired, the base pairing is mutated
                                 else:
                                     partner = df.loc[df.position == max_pos+1, 'partner'].item()
                                     if pairing == "GC":
@@ -610,14 +685,17 @@ if runit:
                                             df.loc[df.position == max_pos+1, 'base'] = "C"
                                         else:
                                             df.loc[df.position == max_pos+1, 'base'] = "A"
-                                    
+                                
+                                # Sequence is reconstructed
                                 subSeq=""
                                 for b in range(1,max(df.position)+1):
                                     subSeq+=df.loc[df.position == b, 'base'].item()
+                                # New sequence is folded and the APE is evaluated
                                 structure, current_dg, pes, ape = fold_and_return(subSeq)
                                 box, apical, rCounter, maxPairs = split_and_knit(subSeq, structure)
                                 bulge_counts = bulge_count(structure, subSeq)
                                 df = new_split(sequence=subSeq, box=box, cons=fungible_positions, codes=condonConsiderations)
+                                # Counter to allow the user to escape the loop
                                 if counter > 100:
                                     ticket+=counter
                                     keepIt = input("Have tried "+str(ticket)+" permutations. The current APE is at "+str(round(ape, 2))+". Should the function keep trying (y/N)? ")
@@ -641,9 +719,7 @@ if runit:
 
 #----------------------------------------------------------------------------- Tweak repeats
             repeaters = repeat_finder(subSeq, repWindow)
-            #print(repeaters)
             tick = ""
-            #print(args.Repeats)
             if args.Repeats:
                 tick+=str(repWindow)+"-"
                 if len(repeaters) > 0:
