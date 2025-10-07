@@ -46,6 +46,7 @@ def revc(seq):
 parser = argparse.ArgumentParser()
 parser.add_argument("-s", "--sequence", help = "Path to the sequence file.") #
 parser.add_argument("-S", "--Sense", help="Whether the siRNA should target the 'Plus' or 'Minus' strand.", default="Plus", choices=["Plus", "Minus"])
+parser.add_argument("-a", "--au_only", help = "Whether or not the end/start of the siRNA MUST begin with A/U", default=False, action="store_true")
 parser.add_argument("-t", "--thermoWeight", help="Weighting factor for the percentUnpaired (0-1)", default=0.9)
 parser.add_argument("-g", "--gcWeight", help="Weighting factor for the GC content (0-1)", default=0.05)
 parser.add_argument("-p", "--positionWeight", help="Weighting factor for the position", default=0.5)
@@ -69,6 +70,8 @@ else:
 # Names the output file
 if args.out:
     outFile = args.out
+    if not outFile.endswith(".csv"):
+        outFile+=".csv"
 else:
     outFile = "data.csv"
 
@@ -95,9 +98,20 @@ if runIt:
         counter=0
         while counter+21 < len(theSeq)+1:
             data=""
-            #print(theSeq[counter:counter+21])
-            #print(structure[counter:counter+21])
-            if (theSeq[counter:counter+21].endswith("U") or theSeq[counter:counter+21].endswith("A")) and (theSeq[counter:counter+21].startswith("U") or theSeq[counter:counter+21].startswith("A")):
+            if args.au_only and (theSeq[counter:counter+21].endswith("U") or theSeq[counter:counter+21].endswith("A")) and (theSeq[counter:counter+21].startswith("U") or theSeq[counter:counter+21].startswith("A")):
+                data=i[1:]+"_"+str(counter+1)+","
+                data+=args.Sense+","
+                think=theSeq[counter:counter+21].replace("U", "T")
+                data+=think+","
+                data+=structure[counter:counter+21]+","
+                data+=str(1-(round(structure[counter:counter+21].count(".")/21, 3)))+","
+                data+=str((counter+1)/len(theSeq))+","
+                data+=str(round((think.count("G")+think.count("C"))/21, 3))+","
+                data+=revc(theSeq[counter:counter+21]).replace("U", "T")
+                data+="\n"
+                with open(outFile, 'a') as f:
+                    f.write(data)
+            else:
                 data=i[1:]+"_"+str(counter+1)+","
                 data+=args.Sense+","
                 think=theSeq[counter:counter+21].replace("U", "T")
