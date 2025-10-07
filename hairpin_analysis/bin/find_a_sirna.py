@@ -2,6 +2,8 @@ import argparse
 import RNA
 import os
 import pandas as pd
+import re
+
 
 def read_fasta(fastafile):
     """
@@ -43,9 +45,25 @@ def revc(seq):
         trim=ops_set[j]+trim
     return trim
 
+def fold_and_find(seq):
+    fc = RNA.fold_compound(seq)
+    fc.pf()
+    structure=fc.mfe()[0]
+    structure = structure.replace(".", "U")
+    structure = structure.replace("(", "C")
+    structure = structure.replace(")", "G")
+    if re.search("C+C+[CU]+C+U+G+[GU]+G+G+", structure):
+        #print(structure)
+        return False
+    else:
+        return True
+    
+
 parser = argparse.ArgumentParser()
 parser.add_argument("-s", "--sequence", help = "Path to the sequence file.") #
 parser.add_argument("-S", "--Sense", help="Whether the siRNA should target the 'Plus' or 'Minus' strand.", default="Plus", choices=["Plus", "Minus"])
+parser.add_argument('-l', "--Length_of_oligo", help="Number of bases to parse", default=21)
+parser.add_argument("-f", "--foldback_check", help="If flagged, the siRNA is folded using ViennaRNA to see if it forms a hairpin. If it does, the sequence is not used.", default=False, action="store_true")
 parser.add_argument("-a", "--au_only", help = "Whether or not the end/start of the siRNA MUST begin with A/U", default=False, action="store_true")
 parser.add_argument("-t", "--thermoWeight", help="Weighting factor for the percentUnpaired (0-1)", default=0.9)
 parser.add_argument("-g", "--gcWeight", help="Weighting factor for the GC content (0-1)", default=0.05)
@@ -66,6 +84,13 @@ if args.sequence:
 else:
     print("No sequence file given. Remember to give a fasta file.")
     runIt=False
+
+if args.Length_of_oligo:
+    try:
+        og_length=int(args.Length_of_oligo)
+    except:
+        print("Unable to parse given. Is it an integer?")
+        runIt=False
 
 # Names the output file
 if args.out:
@@ -96,34 +121,44 @@ if runIt:
         fc.pf()
         structure=fc.mfe()[0]
         counter=0
-        while counter+21 < len(theSeq)+1:
+        while counter+og_length < len(theSeq)+1:
             data=""
-            if args.au_only and (theSeq[counter:counter+21].endswith("U") or theSeq[counter:counter+21].endswith("A")) and (theSeq[counter:counter+21].startswith("U") or theSeq[counter:counter+21].startswith("A")):
+            if args.au_only and (theSeq[counter:counter+og_length].endswith("U") or theSeq[counter:counter+og_length].endswith("A")) and (theSeq[counter:counter+og_length].startswith("U") or theSeq[counter:counter+og_length].startswith("A")):
                 data=i[1:]+"_"+str(counter+1)+","
                 data+=args.Sense+","
-                think=theSeq[counter:counter+21].replace("U", "T")
+                think=theSeq[counter:counter+og_length].replace("U", "T")
                 data+=think+","
-                data+=structure[counter:counter+21]+","
-                data+=str(1-(round(structure[counter:counter+21].count(".")/21, 3)))+","
+                data+=structure[counter:counter+og_length]+","
+                data+=str(1-(round(structure[counter:counter+og_length].count(".")/og_length, 3)))+","
                 data+=str((counter+1)/len(theSeq))+","
-                data+=str(round((think.count("G")+think.count("C"))/21, 3))+","
-                data+=revc(theSeq[counter:counter+21]).replace("U", "T")
+                data+=str(round((think.count("G")+think.count("C"))/og_length, 3))+","
+                data+=revc(theSeq[counter:counter+og_length]).replace("U", "T")
                 data+="\n"
-                with open(outFile, 'a') as f:
-                    f.write(data)
-            else:
+                if args.foldback_check:
+                    write_it=fold_and_find(think)
+                else:
+                    write_it=True
+                if write_it:
+                    with open(outFile, 'a') as f:
+                        f.write(data)
+            elif not args.au_only:
                 data=i[1:]+"_"+str(counter+1)+","
                 data+=args.Sense+","
-                think=theSeq[counter:counter+21].replace("U", "T")
+                think=theSeq[counter:counter+og_length].replace("U", "T")
                 data+=think+","
-                data+=structure[counter:counter+21]+","
-                data+=str(1-(round(structure[counter:counter+21].count(".")/21, 3)))+","
+                data+=structure[counter:counter+og_length]+","
+                data+=str(1-(round(structure[counter:counter+og_length].count(".")/og_length, 3)))+","
                 data+=str((counter+1)/len(theSeq))+","
-                data+=str(round((think.count("G")+think.count("C"))/21, 3))+","
-                data+=revc(theSeq[counter:counter+21]).replace("U", "T")
+                data+=str(round((think.count("G")+think.count("C"))/og_length, 3))+","
+                data+=revc(theSeq[counter:counter+og_length]).replace("U", "T")
                 data+="\n"
-                with open(outFile, 'a') as f:
-                    f.write(data)
+                if args.foldback_check:
+                    write_it=fold_and_find(think)
+                else:
+                    write_it=True
+                if write_it:
+                    with open(outFile, 'a') as f:
+                        f.write(data)
             counter+=1
 
     x=pd.read_csv(outFile)
