@@ -1,0 +1,86 @@
+#! /bin/bash
+
+upps=${1^^}
+foo=$(echo $upps | sed 's/T/U/g')
+f1=""
+f2=""
+f3=""
+for (( i=0; i<${#foo}; i++ )); do
+    tim="${foo:$i:3}"
+    if [ ${#tim} == 3 ]; then
+        if [ $tim == "AUA" ] || [ $tim == "AUC" ] || [ $tim == "AUU" ]; then
+            a="I"
+        elif [ $tim == "AUG" ]; then
+            a="M"
+        elif [ $tim == "ACA" ] || [ $tim == "ACC" ] || [ $tim == "ACG" ] || [ $tim == "ACU" ]; then
+            a="T"
+        elif [ $tim == "AAC" ] || [ $tim == "AAU" ]; then
+            a="N"
+        elif [ $tim == "AAA" ] || [ $tim == "AAG" ]; then
+            a="K"
+        elif [ $tim == "AGC" ] || [ $tim == "AGU" ] || [ $tim == "UCA" ] || [ $tim == "UCC" ] || [ $tim == "UCG" ] || [ $tim == "UCU" ]; then
+            a="S"
+        elif [ $tim == "AGA" ] || [ $tim == "AGG" ] || [ $tim == "CGA" ] || [ $tim == "CGC" ] || [ $tim == "CGG" ] || [ $tim == "CGU" ]; then
+            a="R"
+        elif [ $tim == "CUA" ] || [ $tim == "CUC" ] || [ $tim == "CUG" ] || [ $tim == "CUU" ] || [ $tim == "UUA" ] || [ $tim == "UUG" ]; then
+            a="L"
+        elif [ $tim == "CCA" ] || [ $tim == "CCC" ] || [ $tim == "CCG" ] || [ $tim == "CCU" ]; then
+            a="P"
+        elif [ $tim == "CAC" ] || [ $tim == "CAU" ]; then
+            a="H"
+        elif [ $tim == "CAA" ] || [ $tim == "CAG" ]; then
+            a="Q"
+        elif [ $tim == "GUA" ] || [ $tim == "GUC" ] || [ $tim == "GUG" ] || [ $tim == "GUU" ]; then
+            a="V"
+        elif [ $tim == "GCA" ] || [ $tim == "GCC" ] || [ $tim == "GCG" ] || [ $tim == "GCU" ]; then
+            a="A"
+        elif [ $tim == "GAC" ] || [ $tim == "GAU" ]; then
+            a="D"
+        elif [ $tim == "GAA" ] || [ $tim == "GAG" ]; then
+            a="E"
+        elif [ $tim == "GGA" ] || [ $tim == "GGC" ] || [ $tim == "GGG" ] || [ $tim == "GGU" ]; then
+            a="G"
+        elif [ $tim == "UUC" ] || [ $tim == "UUU" ]; then
+            a="F"
+        elif [ $tim == "UAC" ] || [ $tim == "UAU" ]; then
+            a="Y"
+        elif [ $tim == "UAA" ] || [ $tim == "UAG" ] || [ $tim == "UGA" ]; then
+            a="-"
+        elif [ $tim == "UGC" ] || [ $tim == "UGU" ]; then
+            a="C"
+        elif [ $tim == "UGG" ]; then
+            a="W"
+        fi
+
+        if [ $((($i+3)%3)) == 0 ]; then
+            f1=$f1$a
+        elif [ $((($i+5)%3)) == 0 ]; then
+            f2=$f2$a
+        elif [ $((($i+4)%3)) == 0 ]; then
+            f3=$f3$a
+        fi
+    fi
+done
+
+if [ "$2" == "1" ]; then
+    final=$f1
+    echo "Frame 1: "$final
+elif [ "$2" == "2" ]; then
+    final=$f2
+    echo "Frame 2: "$final
+elif [ "$2" == "3" ]; then
+    final=$f3
+    echo "Frame 3: "$final 
+else
+    echo "Frame 1: "$f1
+    echo "Frame 2: "$f2
+    echo "Frame 3: "$f3
+    final="none"
+fi
+
+if command -v xclip > /dev/null; then
+    if [ $final != "none" ]; then
+        echo $final | xclip -selection clipboard
+        echo "Copied to clipboard"
+    fi
+fi
