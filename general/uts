@@ -11,11 +11,13 @@ elif [[ $upps == *"U"* ]] && [[ $upps != *"T"* ]]; then
   tick=$(echo $upps | sed 's/U/T/g')
 elif [[ $upps == *"T"* ]] && [[ $upps != *"U"* ]]; then
   tick=$(echo $upps | sed 's/T/U/g')
+else
+    tick=$(echo $upps | sed 's/T/U/g')" - "$(echo $upps | sed 's/U/T/g')
 fi
 
 echo '5`- '$tick' -3`'
 
-if command -v xclip > /dev/null; then
+if command -v xclip > /dev/null && [[ $tick != *" - "* ]]; then
   echo $tick | xclip -selection clipboard
   echo "Copied to clipboard"
 fi
