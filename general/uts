@@ -1,0 +1,21 @@
+#! /bin/bash
+
+upps=${1^^}
+#upps=${echo upps | sed 's/U/T/g'}
+
+if [ "$2" == "-u" ]; then
+  tick=$(echo $upps | sed 's/T/U/g')
+elif [ "$2" == "-t" ]; then
+  tick=$(echo $upps | sed 's/U/T/g')
+elif [[ $upps == *"U"* ]] && [[ $upps != *"T"* ]]; then
+  tick=$(echo $upps | sed 's/U/T/g')
+elif [[ $upps == *"T"* ]] && [[ $upps != *"U"* ]]; then
+  tick=$(echo $upps | sed 's/T/U/g')
+fi
+
+echo '5`- '$tick' -3`'
+
+if command -v xclip > /dev/null; then
+  echo $tick | xclip -selection clipboard
+  echo "Copied to clipboard"
+fi
