@@ -110,7 +110,7 @@ if runIt:
         hit=False
 
         print("Generating hairpins of sequence: "+i[1:])
-        theSeq = fastas[i].replace("T", "U")
+        theSeq = fastas[i].upper().replace("T", "U")
         if args.Sense == "Minus":
             theSeq=revc(theSeq)
 
