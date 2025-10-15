@@ -97,7 +97,7 @@ parser.add_argument("-n", "--numberOfIterations", help="Number of time to genera
 parser.add_argument("-s", "--sequence", help = "Path to the sequence file.") #
 parser.add_argument("-A", "--Anchor", help='Whether the miRNA targeting site should be anchored to the apical loop (A) or the base of the hairpin (B).', 
                     default="A", choices=['A', 'B'])
-parser.add_argument("-a", "--apicalSize", help = "Length of the apical loop.", default=5) #
+parser.add_argument("-a", "--apicalSize", help = "Length of the apical loop.", default=10) #
 parser.add_argument("-R", "--Repeats", help="Flag repeats. Give an integer length to check if sequence is repeated.")
 parser.add_argument("-D", "--Details", help="Report sequences of apical loops and bulges rather than number.",  action='store_true')
 parser.add_argument("-p", "--PairedPercent", help = "Percent of hairpin that is paired (0-1, default 0.6)") #
@@ -169,7 +169,7 @@ if runIt:
     for i in fastas.keys():
         print("Generating hairpins of sequence: "+i[1:])
         fullSeq=fastas[i]
-        fullSeq=fullSeq.upper()
+        fullSeq=fullSeq.upper().replace(" ", "")
         if "T" in fullSeq:
             fullSeq=fullSeq.replace("T", "U")
 
