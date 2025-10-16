@@ -1,7 +1,6 @@
 #! /bin/bash
 
-upps=${1^^}
-#upps=${echo upps | sed 's/U/T/g'}
+upps=$(echo $1 | tr '[:lower:]' '[:upper:]')
 foo=$(echo $upps | rev)
 tick=""
 for (( i=0; i<${#foo}; i++ )); do

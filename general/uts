@@ -1,7 +1,6 @@
 #! /bin/bash
 
-upps=${1^^}
-#upps=${echo upps | sed 's/U/T/g'}
+upps=$(echo $1 | tr '[:lower:]' '[:upper:]')
 
 if [ "$2" == "-u" ]; then
   tick=$(echo $upps | sed 's/T/U/g')

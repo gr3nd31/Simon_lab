@@ -1,6 +1,6 @@
 #! /bin/bash
 
-upps=${1^^}
+upps=$(echo $1 | tr '[:lower:]' '[:upper:]')
 foo=$(echo $upps | sed 's/T/U/g')
 f1=""
 f2=""
