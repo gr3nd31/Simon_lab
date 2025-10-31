@@ -3,7 +3,7 @@ import random
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-s", "--sequence", help = "Path to the fasta file.")
-parser.add_argument("-n", "--number_to_sample", help = "Number of reads to be sampled.", default=1000000)
+parser.add_argument("-n", "--number_to_sample", help = "Number of reads to be sampled.", default=100000)
 parser.add_argument("-o", "--out", help="Name of output file", default="sampled_reads.fasta")
 parser.parse_args()
 args = parser.parse_args()
