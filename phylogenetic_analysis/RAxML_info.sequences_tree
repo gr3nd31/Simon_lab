@@ -1,5 +1,15 @@
 
 
+IMPORTANT WARNING: Sequences IxYMoV2_KT946712 and IxYMoV2_NC_034243 are exactly identical
+
+IMPORTANT WARNING
+Found 1 sequence that is exactly identical to other sequences in the alignment.
+Normally they should be excluded from the analysis.
+
+Just in case you might need it, an alignment file with 
+sequence duplicates removed is printed to file sequences_aligned.fasta.reduced
+
+
 This is RAxML version 8.2.12 released by Alexandros Stamatakis on May 2018.
 
 With greatly appreciated code contributions by:
@@ -15,9 +25,9 @@ Akifumi S. Tanabe (NRIFS)
 Charlie Taylor    (UF)
 
 
-Alignment has 1293 distinct alignment patterns
+Alignment has 1311 distinct alignment patterns
 
-Proportion of gaps and completely undetermined characters in this alignment: 47.90%
+Proportion of gaps and completely undetermined characters in this alignment: 48.29%
 
 RAxML rapid hill-climbing mode
 
@@ -32,7 +42,7 @@ GAMMA model of rate heterogeneity, ML estimate of alpha-parameter
 GAMMA Model parameters will be estimated up to an accuracy of 0.1000000000 Log Likelihood units
 
 Partition: 0
-Alignment Patterns: 1293
+Alignment Patterns: 1311
 Name: No Name Provided
 DataType: AA
 Substitution Matrix: AUTO
@@ -51,44 +61,49 @@ Base frequencies: 0.087 0.044 0.039 0.057 0.019 0.037 0.058 0.083 0.024 0.048 0.
 
 Automatic protein model assignment algorithm using ML criterion:
 
-	Partition: 0 best-scoring AA model: LG likelihood -56349.023132 with empirical base frequencies
+	Partition: 0 best-scoring AA model: VT likelihood -58062.951362 with empirical base frequencies
 
 
 Automatic protein model assignment algorithm using ML criterion:
 
-	Partition: 0 best-scoring AA model: LG likelihood -56292.453463 with empirical base frequencies
+	Partition: 0 best-scoring AA model: LG likelihood -58027.554315 with empirical base frequencies
 
 
 Automatic protein model assignment algorithm using ML criterion:
 
-	Partition: 0 best-scoring AA model: LG likelihood -55687.375848 with empirical base frequencies
+	Partition: 0 best-scoring AA model: LG likelihood -58012.470543 with empirical base frequencies
 
 
 Automatic protein model assignment algorithm using ML criterion:
 
-	Partition: 0 best-scoring AA model: LG likelihood -55648.251777 with empirical base frequencies
+	Partition: 0 best-scoring AA model: LG likelihood -57373.235498 with empirical base frequencies
 
 
-Inference[0]: Time 62.031380 GAMMA-based likelihood -55648.070164, best rearrangement setting 10
-alpha[0]: 0.679531 
+Automatic protein model assignment algorithm using ML criterion:
+
+	Partition: 0 best-scoring AA model: LG likelihood -57360.676940 with empirical base frequencies
+
+
+Inference[0]: Time 81.672633 GAMMA-based likelihood -57360.603944, best rearrangement setting 5
+alpha[0]: 0.663588 
 
 
 Conducting final model optimizations on all 1 trees under GAMMA-based models ....
 
 Automatic protein model assignment algorithm using ML criterion:
 
-	Partition: 0 best-scoring AA model: LG likelihood -55648.070346 with empirical base frequencies
+	Partition: 0 best-scoring AA model: LG likelihood -57360.604037 with empirical base frequencies
 
 
-Inference[0] final GAMMA-based Likelihood: -55648.046093 tree written to file /home/raas/Documents/Github/Simon_lab/phylogenetic_analysis/RAxML_result.sequences_tree
+Inference[0] final GAMMA-based Likelihood: -57360.596767 tree written to file /home/raas/Documents/Github/Simon_lab/phylogenetic_analysis/RAxML_result.sequences_tree
 
 
-Starting final GAMMA-based thorough Optimization on tree 0 likelihood -55648.046093 .... 
+Starting final GAMMA-based thorough Optimization on tree 0 likelihood -57360.596767 .... 
 
-Final GAMMA-based Score of best tree -55648.046093
+Final GAMMA-based Score of best tree -57360.596767
 
 Program execution info written to /home/raas/Documents/Github/Simon_lab/phylogenetic_analysis/RAxML_info.sequences_tree
 Best-scoring ML tree written to: /home/raas/Documents/Github/Simon_lab/phylogenetic_analysis/RAxML_bestTree.sequences_tree
 
-Overall execution time: 86.628504 secs or 0.024063 hours or 0.001003 days
+Overall execution time: 112.923520 secs or 0.031368 hours or 0.001307 days
 

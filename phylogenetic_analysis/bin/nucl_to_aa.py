@@ -31,7 +31,7 @@ if args.sequences:
     seqs_fil = args.sequences
 
 if args.tag:
-    id_tag = " "+args.tag
+    id_tag = "_"+args.tag
 else:
     id_tag = ""
 

@@ -23,6 +23,7 @@ find_names_and_frames <- function(list_file = "list.csv",
     translations <- args[4]
   }
   
+  # Adds new rows to the annotation file
   for (i in unique(seqs)){
     if (!i %in% unique(unlist(the_db$Accession_id))){
       cat(paste0("Found sequence not in database: ",i, ".\n"))
@@ -38,8 +39,8 @@ find_names_and_frames <- function(list_file = "list.csv",
     }
   }
   
+  # Adds name from fasta file if missing
   for (i in unique(unlist(the_db$Accession_id))){
-    #print(i)
     if (is.na(the_db[the_db$Accession_id == i,]$Name)){
       cat(paste0("Name for ", i, " not found. Appending from fasta.\n"))
       the_fasta <- suppressWarnings(read.table(paste0(seqs_type,i),
@@ -50,8 +51,6 @@ find_names_and_frames <- function(list_file = "list.csv",
     }
   }
 
-  #print(paste0("The orf name is: ", orf_name))
-  #print(is.na(orf_name))
   if (ncol(the_list) > 1 & (is.na(orf_name) | orf_name == "none")){
     cat("Frames detected, generating tree file from subsetted sequences.\n")
     names(the_list) <- c("Acc", "Start", "Stop")
@@ -91,7 +90,8 @@ find_names_and_frames <- function(list_file = "list.csv",
         }
       }
       if (!orf_found){
-        cat(paste0("Orf ", orf_name, " not found in ", i,". Make sure annotation is formatted correctly. Defaulting to whole sequence.\n"))
+        cat(paste0("Orf ", orf_name, " not found in ", i,". Make sure annotation is formatted correctly or remove from list.\n"))
+        the_list <- the_list[the_list$Acc != i,]
       }
     }
   } else {
@@ -111,7 +111,7 @@ find_names_and_frames <- function(list_file = "list.csv",
   # iterates through the list to create the subset
   for (i in unique(unlist(the_list$Acc))){
     #print(the_db[the_db$Accession_id == i,]$Name)
-    tree_file <- paste0(tree_file, ">", the_db[the_db$Accession_id == i,]$Name, "\n")
+    tree_file <- paste0(tree_file, ">", the_db[the_db$Accession_id == i,]$Name, "_", i, "\n")
     
     # Pulls in the read sequence
     the_read <- ""
@@ -121,7 +121,6 @@ find_names_and_frames <- function(list_file = "list.csv",
     for (j in c(2:nrow(the_fasta))){
       the_read <- paste0(the_read, the_fasta[j,1])
     }
-    #print(the_read)
     
     # sets the start and stop defaults
     the_start <- 1
@@ -141,7 +140,6 @@ find_names_and_frames <- function(list_file = "list.csv",
     
     if (the_list[the_list$Acc == i,]$FS != 0 & translations != "none"){
       the_read <- substr(the_read, the_start, the_end)
-      #print(the_list[the_list$Acc == i,])
       cat(paste("Found a frameshift in", i, "of", the_list[the_list$Acc == i,]$FS, "at", the_list[the_list$Acc == i,]$FS_position, "\n"))
       shifted <- 0
       for (j in c(1:nchar(the_read))){

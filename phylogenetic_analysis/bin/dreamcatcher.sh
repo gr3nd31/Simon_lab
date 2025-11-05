@@ -66,7 +66,6 @@ if [ "$2" == "nucl" ]; then
     # Runs mafft alignment and removes the raw sequence file
     echo "Beginning alignment"
     mafft --auto sequences.fasta > sequences_aligned.fasta
-    #rm sequences.fasta
 
     # Generates a phylogenetic tree
     echo "Generate relationships"
