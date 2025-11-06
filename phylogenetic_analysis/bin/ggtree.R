@@ -21,4 +21,4 @@ draft <- ggtree(tree,
   geom_treescale(linesize = 1.5)+
   geom_tiplab()
 #print(draft)
-ggsave("sequences_tree.svg", width = 14, height = 7)
+ggsave("sequences_tree.svg", width = 8.5, height = 14)
