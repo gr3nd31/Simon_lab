@@ -54,6 +54,8 @@ find_names_and_frames <- function(list_file = "list.csv",
   if (ncol(the_list) > 1 & (is.na(orf_name) | orf_name == "none")){
     cat("Frames detected, generating tree file from subsetted sequences.\n")
     names(the_list) <- c("Acc", "Start", "Stop")
+    the_list$FS <- 0
+    the_list$FS_position <- 0
     frames <- T
   } else if (!is.na(orf_name) & orf_name != "none"){
     frames <- T
@@ -125,14 +127,13 @@ find_names_and_frames <- function(list_file = "list.csv",
     # sets the start and stop defaults
     the_start <- 1
     the_end <- nchar(the_read)
-    #print(the_end)
     
     # Stop and start sites are taken from the file
     if (frames == T & 
         !is.na(the_list[the_list$Acc == i,]$Start) & 
         the_list[the_list$Acc == i,]$Start > 0){
       the_start <- the_list[the_list$Acc == i,]$Start
-    } 
+    }
     
     if (frames == T & !is.na(the_list[the_list$Acc == i,]$Stop) & the_list[the_list$Acc == i,]$Stop > 0){
       the_end <- the_list[the_list$Acc == i,]$Stop
