@@ -1,6 +1,10 @@
 
+You are using a proportion of Invariable sites estimate, although I don't
+like it. The likelihood epsilon "-f e" will be automatically lowered to 0.001
+to avoid unfavorable effects caused by simultaneous optimization of alpha and P-Invar
 
-IMPORTANT WARNING: Sequences IxYMoV2_KT946712_ORF4 and IxYMoV2_NC_034243_ORF4 are exactly identical
+
+IMPORTANT WARNING: Sequences IxYMoV2_KT946712 and IxYMoV2_NC_034243 are exactly identical
 
 IMPORTANT WARNING
 Found 1 sequence that is exactly identical to other sequences in the alignment.
@@ -8,6 +12,10 @@ Normally they should be excluded from the analysis.
 
 An alignment file with sequence duplicates removed has already
 been printed to file sequences_aligned.fasta.reduced
+
+
+Using BFGS method to optimize GTR rate parameters, to disable this specify "--no-bfgs" 
+
 
 
 This is RAxML version 8.2.12 released by Alexandros Stamatakis on May 2018.
@@ -25,85 +33,55 @@ Akifumi S. Tanabe (NRIFS)
 Charlie Taylor    (UF)
 
 
-Alignment has 413 distinct alignment patterns
+Alignment has 7118 distinct alignment patterns
 
-Proportion of gaps and completely undetermined characters in this alignment: 49.29%
+Found 0 invariant alignment patterns that correspond to 0 columns 
+Proportion of gaps and completely undetermined characters in this alignment: 51.96%
 
 RAxML rapid hill-climbing mode
 
 Using 1 distinct models/data partitions with joint branch length optimization
 
 
-Executing 1 inferences on the original alignment using 1 distinct randomized MP trees
+Executing 1 inferences on the original alignment using 1 distinct complete random trees
 
 All free model parameters will be estimated by RAxML
-GAMMA model of rate heterogeneity, ML estimate of alpha-parameter
+GAMMA+P-Invar model of rate heterogeneity, ML estimate of alpha-parameter
 
-GAMMA Model parameters will be estimated up to an accuracy of 0.1000000000 Log Likelihood units
+GAMMA+P-Invar Model parameters will be estimated up to an accuracy of 0.0010000000 Log Likelihood units
 
 Partition: 0
-Alignment Patterns: 413
+Alignment Patterns: 7118
 Name: No Name Provided
-DataType: AA
-Substitution Matrix: AUTO
-Using fixed base frequencies
+DataType: DNA
+Substitution Matrix: GTR
 
 
 
 
 RAxML was called as follows:
 
-/usr/bin/raxmlHPC-PTHREADS-AVX -T 8 -s sequences_aligned.fasta -n sequences_tree -m PROTGAMMAAUTO -p 12 
+/usr/bin/raxmlHPC-PTHREADS-AVX -T 8 -d -p 12 -m GTRGAMMAI -s sequences_aligned.fasta -n sequences_tree 
 
 
 Partition: 0 with name: No Name Provided
-Base frequencies: 0.087 0.044 0.039 0.057 0.019 0.037 0.058 0.083 0.024 0.048 0.086 0.062 0.020 0.038 0.046 0.070 0.061 0.014 0.035 0.071 
+Base frequencies: 0.237 0.252 0.281 0.230 
 
-Automatic protein model assignment algorithm using ML criterion:
-
-	Partition: 0 best-scoring AA model: LG likelihood -12303.076318 with empirical base frequencies
-
-
-Automatic protein model assignment algorithm using ML criterion:
-
-	Partition: 0 best-scoring AA model: LG likelihood -12292.685606 with empirical base frequencies
-
-
-Automatic protein model assignment algorithm using ML criterion:
-
-	Partition: 0 best-scoring AA model: LG likelihood -11663.219591 with empirical base frequencies
-
-
-Automatic protein model assignment algorithm using ML criterion:
-
-	Partition: 0 best-scoring AA model: LG likelihood -11648.952229 with empirical base frequencies
-
-
-Automatic protein model assignment algorithm using ML criterion:
-
-	Partition: 0 best-scoring AA model: LG likelihood -11647.808934 with empirical base frequencies
-
-
-Inference[0]: Time 19.867082 GAMMA-based likelihood -11647.388186, best rearrangement setting 5
-alpha[0]: 2.151745 
+Inference[0]: Time 26.645873 GAMMA+P-Invar-based likelihood -188359.827804, best rearrangement setting 15
+alpha[0]: 1.829727 invar[0]: 0.027487 rates[0] ac ag at cg ct gt: 1.854740 3.284573 1.598311 1.139184 3.641278 1.000000 
 
 
 Conducting final model optimizations on all 1 trees under GAMMA-based models ....
 
-Automatic protein model assignment algorithm using ML criterion:
-
-	Partition: 0 best-scoring AA model: LG likelihood -11647.388930 with empirical base frequencies
+Inference[0] final GAMMA-based Likelihood: -188359.760019 tree written to file /home/raas/Documents/Github/Simon_lab/phylogenetic_analysis/RAxML_result.sequences_tree
 
 
-Inference[0] final GAMMA-based Likelihood: -11647.326293 tree written to file /home/raas/Documents/Github/Simon_lab/phylogenetic_analysis/RAxML_result.sequences_tree
+Starting final GAMMA-based thorough Optimization on tree 0 likelihood -188359.760019 .... 
 
-
-Starting final GAMMA-based thorough Optimization on tree 0 likelihood -11647.326293 .... 
-
-Final GAMMA-based Score of best tree -11647.326293
+Final GAMMA-based Score of best tree -188359.760019
 
 Program execution info written to /home/raas/Documents/Github/Simon_lab/phylogenetic_analysis/RAxML_info.sequences_tree
 Best-scoring ML tree written to: /home/raas/Documents/Github/Simon_lab/phylogenetic_analysis/RAxML_bestTree.sequences_tree
 
-Overall execution time: 25.375993 secs or 0.007049 hours or 0.000294 days
+Overall execution time: 38.873097 secs or 0.010798 hours or 0.000450 days
 

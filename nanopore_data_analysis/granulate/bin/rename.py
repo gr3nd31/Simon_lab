@@ -13,30 +13,23 @@ def read_fasta(fastafile):
     Reads a fasta file and returns a dictionary with sequence
     number as keys and sequence code as values
     """
-    sequences = []
+    sequences = {}
     with open(fastafile, "r") as f:
-        ls = f.readlines()
-        for i in ls:
-             sequences.append(i.rstrip("\n"))
-
-    seq_dic = {}
-    dupl=1
-    for i in range(len(sequences)):
-        if len(sequences[i]) > 0 and sequences[i][0] == ">" and len(sequences[i+1]) > 0:
-            if sequences[i] not in seq_dic.keys():
-                seq_id = sequences[i]
+        ls = f.read()
+    ls.rstrip("\n")
+    split_reads=ls.split(">")
+    for i in split_reads:
+        j=i.split("\n")
+        if j[0] != "":
+            seqName=">"+j[0]
+            theSeq=""
+            for k in j[1:]:
+                theSeq+=k
+            if seqName not in sequences.keys():
+                sequences[seqName]=theSeq
             else:
-                seq_id = sequences[i]+"_duplicate_"+str(dupl)
-                dupl+=1
-            seq_seq = sequences[i+1]
-            seq_dic[seq_id] = seq_seq
-        elif len(sequences[i]) > 0 and sequences[i][0] != ">" and sequences[i-1][0] != ">" :
-            seq_seq += sequences[i]
-            seq_dic[seq_id] = seq_seq
-    if dupl > 1:
-        print("Detected multiple instances of sequences with the same name. Only the first instance will be keep the original name.")
-        
-    return seq_dic
+                print("Duplicate seqID found for: "+seqName[1:])
+    return sequences
 
 try:
     x=read_fasta(args.input)
