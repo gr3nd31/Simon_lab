@@ -4,7 +4,6 @@ import re
 parser = argparse.ArgumentParser()
 parser.add_argument("-s", "--sequences", help = "Path to the sequence file.") #
 parser.add_argument("-q", "--query", help = "String of the (regex) sequence you want to find") #
-parser.add_argument("-e", "--extraSequenceLength", help = "How much extra sequence is okay (assuming you're not great with regex)", default=20)
 parser.add_argument("-u", "--u_output", help = "Output data as 'U'", action='store_true') #
 parser.add_argument("-o", "--outputFile", help = "Name of the output file.") #
 parser.parse_args()
@@ -57,21 +56,22 @@ if runIt:
     hits=0
     print("Searching "+str(len(theReads.keys()))+" sequences for: "+k)
     for i in theReads.keys():
+        if i == ">CY1":
+            print(theReads[i])
         outfile=""
         trick=theReads[i]
         trick=trick.replace("U", "T")
         for m in p.finditer(trick):
             start = m.start()
             end = m.end()
-            if len(k)+args.extraSequenceLength >= end-start:
-                hits+=1
-                outfile+=i+"_"+str(start)+":"+str(end)+"\n"
-                tip=theReads[i][start:end]
-                if args.u_output:
-                    tip=tip.replace("T", "U")
-                outfile+=tip+"\n"
-                with open(the_out, 'a') as f:
-                    f.write(outfile)
+            hits+=1
+            outfile+=i+"_"+str(start)+":"+str(end)+"\n"
+            tip=theReads[i][start:end]
+            if args.u_output:
+                tip=tip.replace("T", "U")
+            outfile+=tip+"\n"
+            with open(the_out, 'a') as f:
+                f.write(outfile)
     if hits > 0:
         print("Found sequence "+str(hits)+" times.")
     else:
