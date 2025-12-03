@@ -1,0 +1,16 @@
+#! /bin/bash
+function read_stdin()
+{
+  tick=$(cat)
+  #echo $tick
+  if command -v xclip > /dev/null && [[ $tick != "" ]]; then
+    echo $tick | xclip -selection clipboard
+    echo "Copied to clipboard"
+  elif [[ $1 != "" ]]; then
+    echo $tick > "copied.txt"
+    echo "Copied to text file"
+  else
+    echo "xclip not installed. Install xclip first to use this feature."
+  fi
+}
+read_stdin
