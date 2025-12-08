@@ -3,7 +3,7 @@ import random
 import RNA
 import os
 import re
-
+import numpy as np
 
 def get_pairs(dotBra, rna):
     braDot = dotBra[::-1]
@@ -59,10 +59,107 @@ def bulge_count(dotBra, rna):
         b_c["rB_local"]+=rna[found.start()+1:found.end()-1]+";"
     return b_c
 
+
+def pe_sloper(dotBra, pes, slide):
+    if len(re.findall("\\(\\.+\\)", dotBra)) == 1:
+        try:
+            frontEnd=0
+            frontList=[]
+            backEnd=0
+            backList=[]
+            pes=pes[1:]
+            bins=[]
+            sdBin=[]
+            for i in dotBra:
+                if i == "(":
+                    frontList.append(frontEnd)
+                frontEnd+=1
+            for i in dotBra[::-1]:
+                if i ==")":
+                    backList.append(len(dotBra)-backEnd-1)
+                backEnd+=1
+            if len(frontList) == len(backList):
+                for i in range(0,len(frontList)):
+                    meanie=0
+                    bCount=2
+                    if i < len(frontList)-1:
+                        frontRange=frontList[i+1]-frontList[i]
+                        #print(frontRange)
+                        backRange=backList[i]-backList[i+1]
+                        #print(backRange)
+                        if frontRange > 1:
+                            for j in range(1,frontRange):
+                                #print(j+frontList[i])
+                                meanie+=pes[j+frontList[i]]
+                                bCount+=1
+                        if backRange > 1:
+                            for j in range(1,backRange):
+                                #print(j+backList[i])
+                                meanie+=pes[j+backList[i]-1]
+                                bCount+=1
+                    meanie+=pes[frontList[i]]+pes[backList[i]]
+                    meanie=meanie/bCount
+                    bins.append(i)
+                    sdBin.append(meanie)
+            apBin=i+1
+            ap=re.compile("\\(\\.+\\)")
+            for found in ap.finditer(dotBra):
+                apPE=sum(pes[found.start()+1:found.end()-1])/(found.end()-found.start()-1)
+            bins.append(apBin)
+            sdBin.append(apPE)
+
+            slideBins=[]
+            slideIter=1
+            slidePE=[]
+            windows=len(bins)//slide
+            if len(bins)%slide > 0:
+                windows+=1
+            for i in range(0, windows):
+                slideBins.append(slideIter)
+                slideIter+=1
+                #print(bins[i:i+slide])
+                #print(sdBin[i:i+slide])
+                slidePE.append(sum(sdBin[i:i+slide])/slide)
+
+            sdBin=slidePE
+            bins=slideBins
+            q3, q1 = np.percentile(sdBin, [75, 25])
+            iqr = round(abs(q3-q1),4)
+            x=np.array(bins)
+            y=np.array(sdBin)
+            n = np.size(x)
+            x_mean = np.mean(x)
+            y_mean = np.mean(y)
+            x_mean,y_mean
+
+            Sxy = np.sum(x*y)- n*x_mean*y_mean
+            Sxx = np.sum(x*x)-n*x_mean*x_mean
+
+            b1 = Sxy/Sxx
+            b0 = y_mean-b1*x_mean
+            ape=round(sum(pes)/len(pes),4)
+            slope=round(b1, 4)
+            intercept=round(b0, 4)
+            #print(bins)
+            #print(sdBin)
+        except:
+            print("Failed on: "+dotBra)
+            slope=0
+            intercept=0
+            ape=0
+            iqr=0
+    else:
+        slope=0
+        intercept=0
+        ape=0
+        iqr=0
+    return slope, intercept, ape, iqr
+
 parser = argparse.ArgumentParser()
 parser.add_argument("-n", "--numberOfIterations", help="Number of time to generate the hairpin")
 parser.add_argument("-s", "--sequence", help = "Path to the sequence file. If blank, a random hairpin is generated") #
 parser.add_argument("-S", "--StartSequence", help="Relative start position of sequence (0-1). Default = 0.") #
+parser.add_argument("-t", "--SlidingScale", help="Size of sliding scale of PE analysis", default=1) #
 parser.add_argument("-b", "--bulgeType", help="Type of bulge (symmetrical, left, right). If blank, no bulges are intentionally created")
 parser.add_argument("-B", "--BulgePosition", help="Relative position on the stem for the bulge (0-1). Default 0.5") #
 parser.add_argument("-R", "--Repeats", help="Flag repeats. Give an integer length to check if sequence is repeated.")
@@ -186,6 +283,8 @@ if args.apicalSequence:
 
 if args.bulgeType:
     print("Adding a "+args.bulgeType+" bulge.")
+
+print("Using a slideing scale of "+str(args.SlidingScale)+" for PE analysis (take note as its not included in the output).")
 
 for iter in range(0, nnum):
     lcounter+=1
@@ -313,11 +412,12 @@ for iter in range(0, nnum):
     if os.path.isfile(outFile):
         data = ""
     else:
-        data = "Name,Complementarity,ApicalSize,ApicalSeq,Bulge,BulgeSize,BulgePosition,BulgeSeq,StemLength,Sequence,Structure,Length,bp,GC,dG,dG_Length,PE,APE,GC_pairs,AU_pairs,GU_pairs,GC_pair_percent,AU_pair_percent,GU_pair_percent,apicals,left_bulges,right_bulges,repeats\n"
+        data = "Name,Complementarity,ApicalSize,ApicalSeq,Bulge,BulgeSize,BulgePosition,BulgeSeq,StemLength,Sequence,Structure,Length,bp,GC,dG,dG_Length,PE,APE,PEiqr,PEslope,PEintercept,GC_pairs,AU_pairs,GU_pairs,GC_pair_percent,AU_pair_percent,GU_pair_percent,apicals,left_bulges,right_bulges,repeats\n"
 
     fc = RNA.fold_compound(hp_seq)
     fc.pf()
     
+    peSlope, PEintercept, PEape, SDpep=pe_sloper(fc.mfe()[0], fc.positional_entropy(), int(args.SlidingScale))
     pairs = get_pairs(fc.mfe()[0], hp_seq)
     bulge_counts = bulge_count(fc.mfe()[0], hp_seq)
 
@@ -340,6 +440,9 @@ for iter in range(0, nnum):
     data+=str(fc.positional_entropy()).replace(",","")+"," #Adds all the PEs
     trick=list(fc.positional_entropy())
     data+=str(sum(trick[1:])/(len(trick)-1))+"," #Adds APE
+    data+=str(SDpep)+"," #Adds IQR of pair PE
+    data+=str(peSlope)+"," #Adds slope of PEs across the hairpin
+    data+=str(PEintercept)+"," #Adds y-intercept of PE slope
     data+=str(pairs['GC'])+"," #Adds number of GC pairings
     data+=str(pairs['AU'])+"," #Adds number of AU pairings
     data+=str(pairs['GU'])+"," #Adds number of GU pairings
