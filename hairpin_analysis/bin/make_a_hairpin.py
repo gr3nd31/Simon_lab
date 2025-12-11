@@ -180,6 +180,13 @@ if args.length:
 else:
     hp_length = 30
 
+if args.SlidingScale:
+    try:
+        slider=int(args.SlidingScale)
+    except:
+        print("Unable to parse given sliding scale. Defualting to 1")
+        slider = 1
+
 # Option to check is a sequence is repeated in the hairpin
 if args.Repeats:
     try:
@@ -417,7 +424,7 @@ for iter in range(0, nnum):
     fc = RNA.fold_compound(hp_seq)
     fc.pf()
     
-    peSlope, PEintercept, PEape, SDpep=pe_sloper(fc.mfe()[0], fc.positional_entropy(), int(args.SlidingScale))
+    peSlope, PEintercept, PEape, SDpep=pe_sloper(fc.mfe()[0], fc.positional_entropy(), slider)
     pairs = get_pairs(fc.mfe()[0], hp_seq)
     bulge_counts = bulge_count(fc.mfe()[0], hp_seq)
 

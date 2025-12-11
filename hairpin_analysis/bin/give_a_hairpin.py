@@ -2,11 +2,13 @@ import argparse
 import RNA
 import os
 import re
+import numpy as np
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-s", "--sequence", help = "Path to the sequence file. If blank, a random hairpin is generated") #
 parser.add_argument("-l", "--length", help="Maximum length sequence to be folded")
 parser.add_argument("-R", "--Repeats", help="Flag repeats. Give an integer length to check if sequence is repeated.")
+parser.add_argument("-t", "--SlidingScale", help="Size of sliding scale of PE analysis", default=1) #
 parser.add_argument("-D", "--Details", help="Report sequences of apical loops and bulges rather than number.",  action='store_true')
 parser.add_argument("-o", "--out", help="Name of output file") #
 parser.parse_args()
@@ -68,6 +70,102 @@ def bulge_count(dotBra, rna):
         b_c["rB_local"]+=rna[found.start()+1:found.end()-1]+";"
     return b_c
 
+def pe_sloper(dotBra, pes, slide):
+    if len(re.findall("\\(\\.+\\)", dotBra)) == 1:
+        try:
+            frontEnd=0
+            frontList=[]
+            backEnd=0
+            backList=[]
+            pes=pes[1:]
+            bins=[]
+            sdBin=[]
+            for i in dotBra:
+                if i == "(":
+                    frontList.append(frontEnd)
+                frontEnd+=1
+            for i in dotBra[::-1]:
+                if i ==")":
+                    backList.append(len(dotBra)-backEnd-1)
+                backEnd+=1
+            if len(frontList) == len(backList):
+                for i in range(0,len(frontList)):
+                    meanie=0
+                    bCount=2
+                    if i < len(frontList)-1:
+                        frontRange=frontList[i+1]-frontList[i]
+                        #print(frontRange)
+                        backRange=backList[i]-backList[i+1]
+                        #print(backRange)
+                        if frontRange > 1:
+                            for j in range(1,frontRange):
+                                #print(j+frontList[i])
+                                meanie+=pes[j+frontList[i]]
+                                bCount+=1
+                        if backRange > 1:
+                            for j in range(1,backRange):
+                                #print(j+backList[i])
+                                meanie+=pes[j+backList[i]-1]
+                                bCount+=1
+                    meanie+=pes[frontList[i]]+pes[backList[i]]
+                    meanie=meanie/bCount
+                    bins.append(i)
+                    sdBin.append(meanie)
+            apBin=i+1
+            ap=re.compile("\\(\\.+\\)")
+            for found in ap.finditer(dotBra):
+                apPE=sum(pes[found.start()+1:found.end()-1])/(found.end()-found.start()-1)
+            bins.append(apBin)
+            sdBin.append(apPE)
+
+            slideBins=[]
+            slideIter=1
+            slidePE=[]
+            windows=len(bins)//slide
+            if len(bins)%slide > 0:
+                windows+=1
+            for i in range(0, windows):
+                slideBins.append(slideIter)
+                slideIter+=1
+                #print(bins[i:i+slide])
+                #print(sdBin[i:i+slide])
+                slidePE.append(sum(sdBin[i:i+slide])/slide)
+
+            sdBin=slidePE
+            bins=slideBins
+            q3, q1 = np.percentile(sdBin, [75, 25])
+            iqr = round(abs(q3-q1),4)
+            x=np.array(bins)
+            y=np.array(sdBin)
+            n = np.size(x)
+            x_mean = np.mean(x)
+            y_mean = np.mean(y)
+            x_mean,y_mean
+
+            Sxy = np.sum(x*y)- n*x_mean*y_mean
+            Sxx = np.sum(x*x)-n*x_mean*x_mean
+
+            b1 = Sxy/Sxx
+            b0 = y_mean-b1*x_mean
+            ape=round(sum(pes)/len(pes),4)
+            slope=round(b1, 4)
+            intercept=round(b0, 4)
+            #print(bins)
+            #print(sdBin)
+        except:
+            print("Failed on: "+dotBra)
+            slope=0
+            intercept=0
+            ape=0
+            iqr=0
+    else:
+        slope=0
+        intercept=0
+        ape=0
+        iqr=0
+    return slope, intercept, ape, iqr
+
+
 def read_fasta(fastafile):
     """
     Reads a fasta file and returns a dictionary with sequence
@@ -103,6 +201,14 @@ if args.Repeats:
 else:
     repWindow=0
     foundRepeat=False
+
+if args.SlidingScale:
+    try:
+        slider=int(args.SlidingScale)
+        print("Using a slideing scale of "+str(args.SlidingScale)+" for PE analysis (take note as its not included in the output).")
+    except:
+        print("Unable to parse given sliding scale. Defualting to 1")
+        slider = 1
 
 # Names the output file
 if args.out:
@@ -179,11 +285,11 @@ if seqs != "nope":
             baseBulge = ""
             where_the_b = "0.5"
             hp_length = structure.count("(")
-
+            peSlope, PEintercept, PEape, SDpep=pe_sloper(fc.mfe()[0], fc.positional_entropy(), slider)
             if os.path.isfile(outFile):
                 data = ""
             else:
-                data = "Name,Complementarity,ApicalSize,ApicalSeq,Bulge,BulgeSize,BulgePosition,BulgeSeq,StemLength,Sequence,Structure,Length,bp,GC,dG,dG_Length,PE,APE,GC_pairs,AU_pairs,GU_pairs,GC_pair_percent,AU_pair_percent,GU_pair_percent,apicals,left_bulges,right_bulges,repeats\n"
+                data = "Name,Complementarity,ApicalSize,ApicalSeq,Bulge,BulgeSize,BulgePosition,BulgeSeq,StemLength,Sequence,Structure,Length,bp,GC,dG,dG_Length,PE,APE,PEiqr,PEslope,PEintercept,GC_pairs,AU_pairs,GU_pairs,GC_pair_percent,AU_pair_percent,GU_pair_percent,apicals,left_bulges,right_bulges,repeats\n"
             
             data+=iter.replace("<", "").replace(",", "")+"," #Adds a general name and removes any devilish commas
             data+=str(paired_percent)+"," #Adds complementarity score
@@ -204,6 +310,10 @@ if seqs != "nope":
             data+=str(fc.positional_entropy()).replace(",","")+"," #Adds all the PEs
             trick=list(fc.positional_entropy())
             data+=str(sum(trick[1:])/(len(trick)-1))+"," #Adds APE
+            data+=str(SDpep)+"," #Adds IQR of pair PE
+            data+=str(peSlope)+"," #Adds slope of PEs across the hairpin
+            data+=str(PEintercept)+"," #Adds y-intercept of PE slope
+
             data+=str(pairs['GC'])+"," #Adds number of GC pairings
             data+=str(pairs['AU'])+"," #Adds number of AU pairings
             data+=str(pairs['GU'])+"," #Adds number of GU pairings
@@ -215,6 +325,7 @@ if seqs != "nope":
             data+=str(pairs['AU']/pair_count)+"," #Adds percent of AU pairings
             data+=str(pairs['GU']/pair_count)+"," #Adds percent of GU pairings
             if args.Details:
+                #print(pick)
                 if len(bulge_counts["apical_local"]) > 0:
                     data+=str(bulge_counts["apical_local"][0:len(bulge_counts["apical_local"])-1])+"," #Adds the number of apical loops
                 else:
