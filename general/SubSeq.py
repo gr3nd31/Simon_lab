@@ -56,8 +56,6 @@ if runIt:
     hits=0
     print("Searching "+str(len(theReads.keys()))+" sequences for: "+k)
     for i in theReads.keys():
-        if i == ">CY1":
-            print(theReads[i])
         outfile=""
         trick=theReads[i]
         trick=trick.replace("U", "T")
