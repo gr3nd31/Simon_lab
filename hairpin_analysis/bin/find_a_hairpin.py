@@ -1,11 +1,14 @@
 import re
 import argparse
 import RNA
+from difflib import SequenceMatcher
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-s", "--sequence", help = "Path to the sequence and structure file") #
 parser.add_argument('-S', "--Structure", help = "Add stucture to the output file.", action = 'store_true')
 parser.add_argument('-m', '--minLength', help="Minimum length a structure should be. Recommended is 11.")
+parser.add_argument('-q', '--QuerySequence', help="A sequence that should be associated with the given structure. If used, adjust the -P parameter to change the percent match.")
+parser.add_argument('-P', '--PercentMatch', help="The percent match to the given QuerySequence.", default=0.9)
 parser.add_argument('-b', '--bonds', help="Minimum number of pairs required. Default minimum is 3.")
 parser.add_argument('-F', '--Force', help='If flagged, the subsequence is again folded to verify the sequence can fold on its own and includes no additional sequences.',
                      action='store_true')
@@ -80,6 +83,17 @@ else:
     print("Target structure not given. Defaulting to a hairpin.")
     target = "C+C+[CU]+C+U+G+[GU]+G+G+"
 
+if args.PercentMatch:
+    try:
+        PMatch=float(args.PercentMatch)
+        if args.QuerySequence:
+            print("Matching sequences to "+args.QuerySequence+" with a "+str(round(PMatch*100, 2))+"% match.")
+            Qseq=args.QuerySequence
+            Qseq=Qseq.replace("T", "U")
+    except:
+        print("Unable to read given percent. Try again (0.0-1.0)")
+        runIt=False
+
 # Defines the name of the out file
 if args.out:
     outFile = args.out
@@ -121,19 +135,31 @@ if runIt:
                     if len(n.group()) >= minLength and subStructure[n.start():n.end()].count("C") >= minBonds:
                         start = n.start()+dStart
                         end = n.end()+dStart
-                        finalOut+=">"+prefix+"_"+str(start+1)+"_"+str(end)+"\n"
-                        finalOut+=sequence[start:end]+"\n"
-                        if args.Structure:
-                            finalOut+=subStructure[n.start():n.end()].replace("U",".").replace("C","(").replace("G",")")+"\n"
+                        if args.QuerySequence and SequenceMatcher(None, sequence[start:end], Qseq).ratio() >= PMatch:
+                            finalOut+=">"+prefix+"_"+str(start+1)+"_"+str(end)+"\n"
+                            finalOut+=sequence[start:end]+"\n"
+                            if args.Structure:
+                                finalOut+=subStructure[n.start():n.end()].replace("U",".").replace("C","(").replace("G",")")+"\n"
+                        elif not args.QuerySequence:
+                            finalOut+=">"+prefix+"_"+str(start+1)+"_"+str(end)+"\n"
+                            finalOut+=sequence[start:end]+"\n"
+                            if args.Structure:
+                                finalOut+=subStructure[n.start():n.end()].replace("U",".").replace("C","(").replace("G",")")+"\n"
                     else:
                         continue
 
             #If the trimmed sequence is long enough and contains enough basepairs, the substructure sequence is pulled.
             elif len(sequence[start:end]) >= minLength and structure[start:end].count("C") >= minBonds:
-                finalOut+=">"+prefix+"_"+str(start+1)+"_"+str(end)+"\n"
-                finalOut+=sequence[start:end]+"\n"
-                if args.Structure:
-                    finalOut+=structure[start:end].replace("U",".").replace("C","(").replace("G",")")+"\n"
+                if args.QuerySequence and SequenceMatcher(None, sequence[start:end], Qseq).ratio() >= PMatch:
+                    finalOut+=">"+prefix+"_"+str(start+1)+"_"+str(end)+"\n"
+                    finalOut+=sequence[start:end]+"\n"
+                    if args.Structure:
+                        finalOut+=structure[start:end].replace("U",".").replace("C","(").replace("G",")")+"\n"
+                elif not args.QuerySequence:
+                    finalOut+=">"+prefix+"_"+str(start+1)+"_"+str(end)+"\n"
+                    finalOut+=sequence[start:end]+"\n"
+                    if args.Structure:
+                        finalOut+=structure[start:end].replace("U",".").replace("C","(").replace("G",")")+"\n"
     # If structures were found, they are saved
     if len(finalOut) > 0:
         with open(outFile, 'a') as f:
