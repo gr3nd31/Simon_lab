@@ -68,8 +68,8 @@ if runIt:
             if args.u_output:
                 tip=tip.replace("T", "U")
             outfile+=tip+"\n"
-            with open(the_out, 'a') as f:
-                f.write(outfile)
+        with open(the_out, 'a') as f:
+            f.write(outfile)
     if hits > 0:
         print("Found sequence "+str(hits)+" times.")
     else:
