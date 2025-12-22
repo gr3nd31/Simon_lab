@@ -3,7 +3,7 @@ import re
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-s", "--sequences", help = "Path to the sequence file.") #
-parser.add_argument("-q", "--query", help = "String of the (regex) sequence you want to find") #
+parser.add_argument("-q", "--query", help = "String of the (regex) sequence you want to find") # Carmovirus consensus sequence: G{2,3}[ATC][TA]{3,8}
 parser.add_argument("-u", "--u_output", help = "Output data as 'U'", action='store_true') #
 parser.add_argument("-o", "--outputFile", help = "Name of the output file.") #
 parser.parse_args()
