@@ -573,7 +573,7 @@ graph_hsps <- function(file_name = "reads_df.csv",
   if (subset_data & typeof(subset_number) == "double"){
     print("Sampling data...")
     read_ids <- unique(datum$read_id)
-    if (length(read_ids) > subset_number){
+    if (length(read_ids) >= subset_number){
       read_ids <- sample(read_ids, subset_number)
       datum <- datum[datum$read_id %in% read_ids,]
     } else {
