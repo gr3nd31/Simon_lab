@@ -4,7 +4,9 @@ import os
 import pandas as pd
 import re
 
+#Dictionary to pull complementary base
 ops_set = {"A":"U", "U":"A", "C":"G", "G":"C"}
+# Function to read fasta files quickly
 def read_fasta(fastafile):
     """
     Reads a fasta file and returns a dictionary with sequence
@@ -28,12 +30,14 @@ def read_fasta(fastafile):
                 print("Duplicate seqID found for: "+seqName[1:])
     return sequences
 
+# Function to generate a reverse complement
 def revc(seq):
     trim=""
     for j in seq:
         trim=ops_set[j]+trim
     return trim
 
+# Function to fold a hairpin and determine if if contains a stable hairpin
 def fold_and_find(seq):
     fc = RNA.fold_compound(seq)
     fc.pf()
@@ -46,11 +50,11 @@ def fold_and_find(seq):
     else:
         return True
     
-
+# Defines the arguments
 parser = argparse.ArgumentParser()
 parser.add_argument("-s", "--sequence", help = "Path to the sequence file.")
 parser.add_argument("-S", "--Sense", help="Whether the siRNA should target the 'Plus' or 'Minus' strand.", default="Plus", choices=["Plus", "Minus"])
-parser.add_argument('-l', "--Length_of_oligo", help="Number of bases to parse", default=21)
+parser.add_argument('-l', "--Length_of_oligo", help="Number of bases to parse (Default is 21)", default=21)
 parser.add_argument("-f", "--foldback_check", help="If flagged, the siRNA is folded using ViennaRNA to see if it forms a hairpin. If it does, the sequence is not used.", default=False, action="store_true")
 parser.add_argument("-G", "--exclude_G_stretches", help="If flagged, siRNA with 3 G's in a row are excluded.", default=False, action="store_true")
 parser.add_argument("-C", "--exclude_C_stretches", help="If flagged, siRNA with 3 C's in a row are excluded.", default=False, action="store_true")
@@ -61,6 +65,7 @@ parser.add_argument("-o", "--out", help="Name of output file", default="sirna.cs
 parser.parse_args()
 args = parser.parse_args()
 
+# sets run parameter to true
 runIt=True
 # Pulls a target sequence
 if args.sequence:
@@ -138,15 +143,25 @@ if runIt:
                     hit=True
                 s_count+=1
                 data=""
+                #Stores the name of siRNA
                 data=i[1:].replace(",", "")+","
+                #Stores the siRNA number
                 data+=str(counter+1)+","
+                #Stores the target sense
                 data+=args.Sense+","
+                #Stores the target sequence
                 data+=testSI.replace("U", "T")+","
+                #Stores the predicted target structure
                 data+=structure[counter:counter+og_length]+","
+                #Stores the unpaired percent
                 data+=str(1-(round(structure[counter:counter+og_length].count(".")/og_length, 3)))+","
+                #Stores the position percent
                 data+=str((counter+1)/len(theSeq))+","
+                #Stores the GC content
                 data+=str(round((testSI.count("G")+testSI.count("C"))/og_length, 3))+","
+                #Stores the siRNA sequence
                 data+=revc(theSeq[counter:counter+og_length]).replace("U", "T")
+                #Adds a newline and writes the file
                 data+="\n"
                 with open(outFile, 'a') as f:
                     f.write(data)
@@ -157,6 +172,6 @@ if runIt:
             print("Identified "+str(s_count)+" potential "+str(og_length)+"-base siRNA.\n")
 
     x=pd.read_csv(outFile)
-    x=x.sort_values(by=['Name','percentPaired', 'positionPercent', 'gcPercent'])
+    x=x.sort_values(by=['Name','percentPaired', 'gcPercent','positionPercent'], ascending=True)
     x.to_csv(outFile, index=False)
     print("Potential siRNA generated and stored in "+outFile)
