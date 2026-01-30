@@ -8,7 +8,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-s", "--sequence", help = "Path to the sequence file. If blank, a random hairpin is generated") #
 parser.add_argument("-l", "--length", help="Maximum length sequence to be folded")
 parser.add_argument("-R", "--Repeats", help="Flag repeats. Give an integer length to check if sequence is repeated.")
-parser.add_argument("-t", "--SlidingScale", help="Size of sliding scale of PE analysis", default=1) #
+parser.add_argument("-t", "--SlidingScale", help="Size of sliding scale of PE analysis", default=3) #
 parser.add_argument("-D", "--Details", help="Report sequences of apical loops and bulges rather than number.",  action='store_true')
 parser.add_argument("-o", "--out", help="Name of output file") #
 parser.parse_args()
