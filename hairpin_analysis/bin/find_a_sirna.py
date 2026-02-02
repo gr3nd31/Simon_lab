@@ -95,7 +95,7 @@ if runIt:
     if os.path.isfile(outFile):
         data = ""
     else:
-        data = "Name,Position,Sense,Sequence,Structure,percentPaired,positionPercent,gcPercent,siRNA\n"
+        data = "Name,Position,Sense,Sequence,Structure,percentPaired,positionPercent,gcPercent,APE,siRNA\n"
         with open(outFile, 'w') as f:
             f.write(data)
             data = ""
@@ -112,6 +112,7 @@ if runIt:
         fc = RNA.fold_compound(theSeq)
         fc.pf()
         structure=fc.mfe()[0]
+        pes=list(fc.positional_entropy())[1:]
         counter=0
         s_count=0
         print("Generating siRNA...")
@@ -159,6 +160,9 @@ if runIt:
                 data+=str((counter+1)/len(theSeq))+","
                 #Stores the GC content
                 data+=str(round((testSI.count("G")+testSI.count("C"))/og_length, 3))+","
+                #Stores the APE
+                data+=str(round(sum(pes[counter:counter+og_length])/og_length, 3))+","
+                #data+=str(pes[counter:counter+og_length])+","
                 #Stores the siRNA sequence
                 data+=revc(theSeq[counter:counter+og_length]).replace("U", "T")
                 #Adds a newline and writes the file
