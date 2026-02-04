@@ -90,6 +90,7 @@ def pe_sloper(dotBra, pes, slide):
                 backEnd+=1
             if len(frontList) == len(backList):
                 for i in range(0,len(frontList)):
+                    #print(i)
                     meanie=0
                     bCount=2
                     if i < len(frontList)-1:
@@ -133,7 +134,7 @@ def pe_sloper(dotBra, pes, slide):
 
             sdBin=slidePE
             bins=slideBins
-            q3, q1 = np.percentile(sdBin, [75, 25])
+            q3, q1 = np.percentile(sdBin, [90, 10])
             iqr = round(abs(q3-q1),4)
             x=np.array(bins)
             y=np.array(sdBin)
@@ -205,7 +206,7 @@ else:
 if args.SlidingScale:
     try:
         slider=int(args.SlidingScale)
-        print("Using a slideing scale of "+str(args.SlidingScale)+" for PE analysis (take note as its not included in the output).")
+        print("Using a sliding scale of "+str(args.SlidingScale)+" for PE analysis (take note as its not included in the output).")
     except:
         print("Unable to parse given sliding scale. Defualting to 1")
         slider = 1
