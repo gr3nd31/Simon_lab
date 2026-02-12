@@ -134,8 +134,10 @@ def pe_sloper(dotBra, pes, slide):
 
             sdBin=slidePE
             bins=slideBins
-            q3, q1 = np.percentile(sdBin, [90, 10])
-            iqr = round(abs(q3-q1),4)
+            q3, q1 = np.percentile(sdBin, [75, 25])
+            iqr = round(q3-0.2,4)
+            if iqr < 0:
+                iqr = 0
             x=np.array(bins)
             y=np.array(sdBin)
             n = np.size(x)
