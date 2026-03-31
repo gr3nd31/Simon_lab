@@ -59,6 +59,30 @@ def bulge_count(dotBra, rna):
         b_c["rB_local"]+=rna[found.start()+1:found.end()-1]+";"
     return b_c
 
+def read_fasta(fastafile):
+    """
+    Reads a fasta file and returns a dictionary with sequence
+    number as keys and sequence code as values
+    """
+    sequences = {}
+    with open(fastafile, "r") as f:
+        ls = f.read()
+    ls.rstrip("\n")
+    split_reads=ls.split(">")
+    for i in split_reads:
+        j=i.split("\n")
+        if j[0] != "":
+            seqName=">"+j[0]
+            theSeq=""
+            for k in j[1:]:
+                theSeq+=k
+            if seqName not in sequences.keys():
+                sequences[seqName]=theSeq
+            else:
+                print("Duplicate seqID found for: "+seqName[1:])
+                print(theSeq)
+                print(sequences[seqName])
+    return sequences
 
 def pe_sloper(dotBra, pes, slide):
     if len(re.findall("\\(\\.+\\)", dotBra)) == 1:
@@ -203,29 +227,12 @@ else:
 # Pulls a target sequence
 if args.sequence:
     try:
-        seq_file = open(args.sequence, "r")
-        sequence = seq_file.read().strip()
-        sequence = sequence.upper().replace(" ", "")
-        sequence = sequence.replace("T", "U")
-        seq_file.close()
-        fasta = "hairpin_"+args.sequence
-
-        if repWindow > 1:
-            foundRepeat=False
-            for i in range(0, len(sequence)):
-                subRep=sequence[i:i+repWindow]
-                p=[match.start() for match in re.finditer(subRep, sequence)]
-                if len(p) > 1:
-                    foundRepeat=True
-            if foundRepeat:
-                print("Given sequence contains a sequence repeat of at least "+str(repWindow)+" bases.")
+        seqs=read_fasta(args.sequence)
     except:
         print("Unable to read sequence file. Continuing without a sequence.")
-        sequence = ""
-        fasta = "hairpin_"+str(hp_length)
+        seqs = {"Hairpin_1":""}
 else:
-    sequence = ""
-    fasta = "hairpin_"+str(hp_length)
+    seqs = {"Hairpin_1":""}
 
 # Determines the size of the apical loop
 if args.apicalLoop:
@@ -247,22 +254,6 @@ if args.PairedPercent:
 else:
      paired_percent = 100
 
-# Determines the relative position of the target sequence
-if args.StartSequence:
-    starting=int(float(args.StartSequence)*hp_length)
-else:
-    starting=int(0.5*(hp_length-len(sequence)))
-
-# Determines the relative position of the bulge
-if args.BulgePosition:
-    left_bulging=int(float(args.BulgePosition)*hp_length)
-    where_the_b=str(args.BulgePosition)
-    right_bulging=hp_length-left_bulging
-else:
-    left_bulging=int(0.5*(hp_length-len(sequence)))
-    right_bulging=hp_length-left_bulging
-    where_the_b="0.5"
-
 # Determines the size of the bulge
 #if symmetrical, the size is the same on both side
 #if asymmetrical, the size is only for the one side
@@ -281,7 +272,7 @@ else:
 
 print("\nGenerating "+str(nnum)+" hairpins with a complementarity of "+str(paired_percent)+"% an apical loop of "+str(ap_length)+" bases.")
 if args.sequence:
-    print("Pulling seqence from '"+args.sequence+"' to place on the 5' side.")
+    print("Pulling seqence from '"+args.sequence+"' file to place on the 5' side.")
 else:
     print("Sequence will be randomly generated.")
 
@@ -293,201 +284,217 @@ if args.bulgeType:
 
 print("Using a slideing scale of "+str(args.SlidingScale)+" for PE analysis (take note as its not included in the output).")
 
-for iter in range(0, nnum):
-    lcounter+=1
-    if lcounter%100 == 0:
-        print("Folding read: "+str(lcounter))
-# Defines the sequence of the bulge
-    leftBulge = ""
-    rightBulge = ""
-    baseBulge = ""
-    twin=-2
-    syms=False
-    if args.bulgeType:
-        codpiece = args.bulgeType
+for seq in seqs.keys():
+    for iter in range(0, nnum):
+        lcounter+=1
+        if lcounter%100 == 0:
+            print("Folding read: "+str(lcounter))
+    # Defines the sequence of the bulge
+        leftBulge = ""
+        rightBulge = ""
+        baseBulge = ""
         twin=-2
-        while len(baseBulge) < bulgeSize:
-            baseBulge+=random.choice(nt_set)
-
-        if args.bulgeType == "left":
-            leftBulge = baseBulge
-        elif args.bulgeType == "right":
+        syms=False
+        if args.bulgeType:
+            codpiece = args.bulgeType
             twin=-2
-            rightBulge = baseBulge
-        elif args.bulgeType == "symmetrical":
-            syms=True
-            leftBulge = baseBulge
-            for i in leftBulge[::-1]:
-                possNTC = random.choice(nt_set)
-                while possNTC == ops_set[i]:
+            while len(baseBulge) < bulgeSize:
+                baseBulge+=random.choice(nt_set)
+
+            if args.bulgeType == "left":
+                leftBulge = baseBulge
+            elif args.bulgeType == "right":
+                twin=-2
+                rightBulge = baseBulge
+            elif args.bulgeType == "symmetrical":
+                syms=True
+                leftBulge = baseBulge
+                for i in leftBulge[::-1]:
                     possNTC = random.choice(nt_set)
-                rightBulge += i
+                    while possNTC == ops_set[i]:
+                        possNTC = random.choice(nt_set)
+                    rightBulge += i
+            else:
+                print("Incorrect bulge type given.")
+                codpiece="None"
         else:
-            print("Incorrect bulge type given.")
             codpiece="None"
-    else:
-        codpiece="None"
+            
+    #--------
+        sequence=seqs[seq]
+        sequence=sequence.upper().replace("T", "U")
+        # Determines the relative position of the target sequence
+        if args.StartSequence:
+            starting=int(float(args.StartSequence)*hp_length)
+        else:
+            starting=int(0.5*(hp_length-len(sequence)))
+
+        # Determines the relative position of the bulge
+        if args.BulgePosition:
+            left_bulging=int(float(args.BulgePosition)*hp_length)
+            where_the_b=str(args.BulgePosition)
+            right_bulging=hp_length-left_bulging
+        else:
+            left_bulging=int(0.5*(hp_length-len(sequence)))
+            right_bulging=hp_length-left_bulging
+            where_the_b="0.5"
+        hp_seq = ""
+        hidden_seq=""
+        seq_added = False
+        bulge_added = False
+        bulge_ended = False
+
+        counter=0
+        counting=False
+
+        while len(hp_seq)-len(leftBulge) < hp_length:
+            if len(hp_seq) >= starting and not seq_added:
+                seq_added = True
+                hp_seq+=sequence
+                hidden_seq+=sequence
+                if counting:
+                    counter+=len(sequence)
+            elif len(hp_seq) > left_bulging and not bulge_added and len(leftBulge) > 0:
+                bulge_added = True
+                hp_seq+=leftBulge
+                counting=True
+            else:
+                possNT=random.choice(nt_set)
+                hp_seq+=possNT
+                hidden_seq+=possNT
+                if counting:
+                    counter+=1
+
+        revc = ""
+        timmy=0
+        for i in range(len(hidden_seq)-1,twin,-1):
+            check = random.randint(0,100)
+        # Accounts for differences in left bulges
+            if hidden_seq[i] != hp_seq[i+timmy] and not bulge_ended and not syms:
+                bulge_ended = True
+                revc+=rightBulge
+                timmy=1
         
-#--------
+        # Adds the right bulge
+            elif len(revc) >= right_bulging and not bulge_ended and not syms:
+                bulge_ended = True
+                revc+=rightBulge
+                timmy=1
+        # Adds the right bulge to a symmetrical hairpin
+            elif counter== 0 and syms:
+                bulge_ended = True
+                revc+=rightBulge
+                timmy=1
+        # Adds the complementary base
+            elif check <= paired_percent:
+                revc+=ops_set[hidden_seq[i+timmy]]
+            else:
+                revc += random.choice(nt_set)
+            counter-=1
 
-    hp_seq = ""
-    hidden_seq=""
-    seq_added = False
-    bulge_added = False
-    bulge_ended = False
-
-    counter=0
-    counting=False
-
-    while len(hp_seq)-len(leftBulge) < hp_length:
-        if len(hp_seq) >= starting and not seq_added:
-            seq_added = True
-            hp_seq+=sequence
-            hidden_seq+=sequence
-            if counting:
-                counter+=len(sequence)
-        elif len(hp_seq) > left_bulging and not bulge_added and len(leftBulge) > 0:
-            bulge_added = True
-            hp_seq+=leftBulge
-            counting=True
+        ap_seq=""
+        if args.apicalSequence:
+            ap_seq = args.apicalSequence
         else:
-            possNT=random.choice(nt_set)
-            hp_seq+=possNT
-            hidden_seq+=possNT
-            if counting:
-                counter+=1
+            for i in range(0, ap_length):
+                ap_seq+=random.choice(nt_set)
 
-    revc = ""
-    timmy=0
-    for i in range(len(hidden_seq)-1,twin,-1):
-        check = random.randint(0,100)
-    # Accounts for differences in left bulges
-        if hidden_seq[i] != hp_seq[i+timmy] and not bulge_ended and not syms:
-            bulge_ended = True
-            revc+=rightBulge
-            timmy=1
-    
-    # Adds the right bulge
-        elif len(revc) >= right_bulging and not bulge_ended and not syms:
-            bulge_ended = True
-            revc+=rightBulge
-            timmy=1
-    # Adds the right bulge to a symmetrical hairpin
-        elif counter== 0 and syms:
-            bulge_ended = True
-            revc+=rightBulge
-            timmy=1
-    # Adds the complementary base
-        elif check <= paired_percent:
-            revc+=ops_set[hidden_seq[i+timmy]]
+        hp_seq+=ap_seq
+        hp_seq+=revc
+        tick=""
+        if args.Repeats:
+            tick+=str(repWindow)+"-"
+            foundRepeat=False
+            repList=[]
+            for i in range(0, len(hp_seq)):
+                subRep=hp_seq[i:i+repWindow]
+                if len(subRep) >= repWindow:
+                    p=[match.start() for match in re.finditer(subRep, hp_seq)]
+                    if len(p) > 1:
+                        foundRepeat=True
+                        if subRep not in repList:
+                            tick+=subRep+":"
+                            repList.append(subRep)
+                        for t in p:
+                            if t not in repList:
+                                repList.append(t)
+                                tick+=str(t+1)+":"
+                        tick=tick[0:len(tick)-1]
+                        tick+="_"
+            if len(tick) > 2:
+                tick=tick[0:len(tick)-1]
+
+        if os.path.isfile(outFile):
+            data = ""
         else:
-            revc += random.choice(nt_set)
-        counter-=1
+            data = "Name,Complementarity,ApicalSize,ApicalSeq,Bulge,BulgeSize,BulgePosition,BulgeSeq,StemLength,Sequence,Structure,Length,bp,GC,dG,dG_Length,PE,APE,PEiqr,PEslope,PEintercept,GC_pairs,AU_pairs,GU_pairs,GC_pair_percent,AU_pair_percent,GU_pair_percent,apicals,left_bulges,right_bulges,repeats\n"
 
-    ap_seq=""
-    if args.apicalSequence:
-        ap_seq = args.apicalSequence
-    else:
-        for i in range(0, ap_length):
-            ap_seq+=random.choice(nt_set)
+        fc = RNA.fold_compound(hp_seq)
+        fc.pf()
+        
+        peSlope, PEintercept, PEape, SDpep=pe_sloper(fc.mfe()[0], fc.positional_entropy(), slider)
+        pairs = get_pairs(fc.mfe()[0], hp_seq)
+        bulge_counts = bulge_count(fc.mfe()[0], hp_seq)
 
-    hp_seq+=ap_seq
-    hp_seq+=revc
-    tick=""
-    if args.Repeats:
-        tick+=str(repWindow)+"-"
-        foundRepeat=False
-        repList=[]
-        for i in range(0, len(hp_seq)):
-            subRep=hp_seq[i:i+repWindow]
-            if len(subRep) >= repWindow:
-                p=[match.start() for match in re.finditer(subRep, hp_seq)]
-                if len(p) > 1:
-                    foundRepeat=True
-                    if subRep not in repList:
-                        tick+=subRep+":"
-                        repList.append(subRep)
-                    for t in p:
-                        if t not in repList:
-                            repList.append(t)
-                            tick+=str(t+1)+":"
-                    tick=tick[0:len(tick)-1]
-                    tick+="_"
-        if len(tick) > 2:
-            tick=tick[0:len(tick)-1]
-
-    if os.path.isfile(outFile):
-        data = ""
-    else:
-        data = "Name,Complementarity,ApicalSize,ApicalSeq,Bulge,BulgeSize,BulgePosition,BulgeSeq,StemLength,Sequence,Structure,Length,bp,GC,dG,dG_Length,PE,APE,PEiqr,PEslope,PEintercept,GC_pairs,AU_pairs,GU_pairs,GC_pair_percent,AU_pair_percent,GU_pair_percent,apicals,left_bulges,right_bulges,repeats\n"
-
-    fc = RNA.fold_compound(hp_seq)
-    fc.pf()
-    
-    peSlope, PEintercept, PEape, SDpep=pe_sloper(fc.mfe()[0], fc.positional_entropy(), slider)
-    pairs = get_pairs(fc.mfe()[0], hp_seq)
-    bulge_counts = bulge_count(fc.mfe()[0], hp_seq)
-
-    data+=fasta+"," #Adds a general name
-    data+=str(paired_percent)+"," #Adds complementarity score
-    data+=str(ap_length)+"," # Adds the size of the apical loop
-    data+=ap_seq+"," # Adds the apical sequence
-    data+=codpiece+"," #Adds the bulge type
-    data+=str(len(baseBulge))+"," #Adds Bulge size
-    data+=where_the_b+"," #Add Bugle position
-    data+=baseBulge+"," #Adds bulge sequence
-    data+=str(hp_length)+"," #Adds the length of hairpin stem
-    data+=hp_seq+"," #Adds the primary sequence
-    data+=fc.mfe()[0]+"," # Adds the structure sequence in dot-bracket
-    data+=str(len(hp_seq))+"," # Adds the total length of the sequence
-    data+=str(fc.mfe()[0].count("("))+"," # Adds the number of basepaired bases
-    data+=str(round((hp_seq.count("G")+hp_seq.count("C"))/len(hp_seq),2))+"," # Adds teh GC content
-    data+=str(round(fc.mfe()[1],3))+"," #Adds the MFE
-    data+=str(round(fc.mfe()[1]/len(hp_seq),2))+"," # Adds the MFE/length ratio
-    data+=str(fc.positional_entropy()).replace(",","")+"," #Adds all the PEs
-    trick=list(fc.positional_entropy())
-    data+=str(sum(trick[1:])/(len(trick)-1))+"," #Adds APE
-    data+=str(SDpep)+"," #Adds IQR of pair PE
-    data+=str(peSlope)+"," #Adds slope of PEs across the hairpin
-    data+=str(PEintercept)+"," #Adds y-intercept of PE slope
-    data+=str(pairs['GC'])+"," #Adds number of GC pairings
-    data+=str(pairs['AU'])+"," #Adds number of AU pairings
-    data+=str(pairs['GU'])+"," #Adds number of GU pairings
-    if fc.mfe()[0].count("(") > 0:
-        pair_count = fc.mfe()[0].count("(")
-    else:
-        pair_count = 1
-    data+=str(pairs['GC']/pair_count)+"," #Adds percent of GC pairings
-    data+=str(pairs['AU']/pair_count)+"," #Adds percent of AU pairings
-    data+=str(pairs['GU']/pair_count)+"," #Adds percent of GU pairings
-    if args.Details:
-        if len(bulge_counts["apical_local"]) > 0:
-            data+=str(bulge_counts["apical_local"][0:len(bulge_counts["apical_local"])-1])+"," #Adds the number of apical loops
+        data+=seq+"," #Adds a general name
+        data+=str(paired_percent)+"," #Adds complementarity score
+        data+=str(ap_length)+"," # Adds the size of the apical loop
+        data+=ap_seq+"," # Adds the apical sequence
+        data+=codpiece+"," #Adds the bulge type
+        data+=str(len(baseBulge))+"," #Adds Bulge size
+        data+=where_the_b+"," #Add Bugle position
+        data+=baseBulge+"," #Adds bulge sequence
+        data+=str(hp_length)+"," #Adds the length of hairpin stem
+        data+=hp_seq+"," #Adds the primary sequence
+        data+=fc.mfe()[0]+"," # Adds the structure sequence in dot-bracket
+        data+=str(len(hp_seq))+"," # Adds the total length of the sequence
+        data+=str(fc.mfe()[0].count("("))+"," # Adds the number of basepaired bases
+        data+=str(round((hp_seq.count("G")+hp_seq.count("C"))/len(hp_seq),2))+"," # Adds teh GC content
+        data+=str(round(fc.mfe()[1],3))+"," #Adds the MFE
+        data+=str(round(fc.mfe()[1]/len(hp_seq),2))+"," # Adds the MFE/length ratio
+        data+=str(fc.positional_entropy()).replace(",","")+"," #Adds all the PEs
+        trick=list(fc.positional_entropy())
+        data+=str(sum(trick[1:])/(len(trick)-1))+"," #Adds APE
+        data+=str(SDpep)+"," #Adds IQR of pair PE
+        data+=str(peSlope)+"," #Adds slope of PEs across the hairpin
+        data+=str(PEintercept)+"," #Adds y-intercept of PE slope
+        data+=str(pairs['GC'])+"," #Adds number of GC pairings
+        data+=str(pairs['AU'])+"," #Adds number of AU pairings
+        data+=str(pairs['GU'])+"," #Adds number of GU pairings
+        if fc.mfe()[0].count("(") > 0:
+            pair_count = fc.mfe()[0].count("(")
         else:
-            data+="None,"
-        if len(bulge_counts["lB_local"]) > 0:
-            data+=str(bulge_counts["lB_local"][0:len(bulge_counts["lB_local"])-1])+"," #Adds the number of 5 prime bulges
-        else:
-            data+="None,"
-        if len(bulge_counts["rB_local"]) > 0:
-            data+=str(bulge_counts["rB_local"][0:len(bulge_counts["rB_local"])-1])+"," #Adds the number of 3 prime bulges
-        else:
-            data+="None,"
-    else:
-        data+=str(bulge_counts["apicals"])+"," #Adds the number of apical loops
-        data+=str(bulge_counts["l_bulges"])+"," #Adds the number of 5 prime bulges
-        data+=str(bulge_counts["r_bulges"])+"," #Adds the number of 3 prime bulges
-    if len(tick) > 2:
+            pair_count = 1
+        data+=str(pairs['GC']/pair_count)+"," #Adds percent of GC pairings
+        data+=str(pairs['AU']/pair_count)+"," #Adds percent of AU pairings
+        data+=str(pairs['GU']/pair_count)+"," #Adds percent of GU pairings
         if args.Details:
-            data+=tick+"\n" #Tags if sequence contains a repeat
+            if len(bulge_counts["apical_local"]) > 0:
+                data+=str(bulge_counts["apical_local"][0:len(bulge_counts["apical_local"])-1])+"," #Adds the number of apical loops
+            else:
+                data+="None,"
+            if len(bulge_counts["lB_local"]) > 0:
+                data+=str(bulge_counts["lB_local"][0:len(bulge_counts["lB_local"])-1])+"," #Adds the number of 5 prime bulges
+            else:
+                data+="None,"
+            if len(bulge_counts["rB_local"]) > 0:
+                data+=str(bulge_counts["rB_local"][0:len(bulge_counts["rB_local"])-1])+"," #Adds the number of 3 prime bulges
+            else:
+                data+="None,"
         else:
+            data+=str(bulge_counts["apicals"])+"," #Adds the number of apical loops
+            data+=str(bulge_counts["l_bulges"])+"," #Adds the number of 5 prime bulges
+            data+=str(bulge_counts["r_bulges"])+"," #Adds the number of 3 prime bulges
+        if len(tick) > 2:
+            if args.Details:
+                data+=tick+"\n" #Tags if sequence contains a repeat
+            else:
+                data+=str(repWindow)+"-"+str(foundRepeat)+"\n" #Tags if sequence contains a repeat
+        elif args.Repeats:
             data+=str(repWindow)+"-"+str(foundRepeat)+"\n" #Tags if sequence contains a repeat
-    elif args.Repeats:
-        data+=str(repWindow)+"-"+str(foundRepeat)+"\n" #Tags if sequence contains a repeat
-    else:
-        data+="NA\n" #Tags if sequence contains a repeat
+        else:
+            data+="NA\n" #Tags if sequence contains a repeat
 
-    with open(outFile, 'a') as f:
-        f.write(data)
-
+        with open(outFile, 'a') as f:
+            f.write(data)
 print("\nHairpins generated and stored in "+outFile)
