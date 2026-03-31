@@ -266,7 +266,7 @@ nt_set = ["A", "U", "G", "C"]
 ops_set = {"A":"U", "U":"A", "C":"G", "G":"C"}
 
 if args.numberOfIterations:
-    nnum = int(args.numberOfIterations)+1
+    nnum = int(args.numberOfIterations)
 else:
     nnum = 1
 
@@ -436,7 +436,7 @@ for seq in seqs.keys():
         pairs = get_pairs(fc.mfe()[0], hp_seq)
         bulge_counts = bulge_count(fc.mfe()[0], hp_seq)
 
-        data+=seq+"," #Adds a general name
+        data+=seq+"_"+str(iter+1)+"," #Adds a general name
         data+=str(paired_percent)+"," #Adds complementarity score
         data+=str(ap_length)+"," # Adds the size of the apical loop
         data+=ap_seq+"," # Adds the apical sequence
