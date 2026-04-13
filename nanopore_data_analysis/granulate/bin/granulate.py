@@ -366,6 +366,8 @@ if runit:
                 uCount=genome_dict[i][2]["U"]
                 eCount=genome_dict[i][2]["E"]
                 tCount=genome_dict[i][2]["T"]
+                realCount = pCount-(gCount+cCount+aCount+uCount+eCount+tCount)
+
                 if gCount > 0:
                     shannonDiversity+=float(-1*(gCount/pCount)*numpy.log(gCount/pCount))
                 if cCount > 0:
@@ -378,6 +380,7 @@ if runit:
                     shannonDiversity+=float(-1*(tCount/pCount)*numpy.log(tCount/pCount))
                 if eCount > 0:
                     shannonDiversity+=float(-1*(eCount/pCount)*numpy.log(eCount/pCount))
+                shannonDiversity+=float(-1*(realCount/pCount)*numpy.log(realCount/pCount))
 
                 tick=i+","+genome_dict[i][0]+","+str(pCount)+",G:"+str(genome_dict[i][2]["G"])+"_C:"+str(genome_dict[i][2]["C"])+"_A:"+str(genome_dict[i][2]["A"])+"_T:"+str(genome_dict[i][2]["T"])+"_U:"+str(genome_dict[i][2]["U"])+","+str(genome_dict[i][3])+","+str(genome_dict[i][4])+","+str(genome_dict[i][5])+",G:"+str(genome_dict[i][6]["G"])+"_C:"+str(genome_dict[i][6]["C"])+"_A:"+str(genome_dict[i][6]["A"])+"_T:"+str(genome_dict[i][6]["T"])+"_U:"+str(genome_dict[i][6]["U"])+"_E:"+str(genome_dict[i][6]["E"])+","+str(round(shannonDiversity, 3))+"\n"
                 f.write(tick)
