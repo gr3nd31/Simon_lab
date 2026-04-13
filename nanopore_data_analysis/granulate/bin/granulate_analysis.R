@@ -100,7 +100,7 @@ graph_coverage_map <- function(file_name="genome_df.csv",
     
     print(draft)
     if(save_them){
-      ggsave(paste0(prefix, "coverage.png"), dpi=500)
+      ggsave(paste0(prefix, "coverage.png"), dpi=500, height = 3, width = 10, units = "in")
     }
     
     draft <- ggplot(data = datum, 
@@ -115,7 +115,7 @@ graph_coverage_map <- function(file_name="genome_df.csv",
       theme(legend.position = "top")
     print(draft)
     if(save_them){
-      ggsave(paste0(prefix, "rel_mismatched.png"), dpi=500)
+      ggsave(paste0(prefix, "rel_mismatched.png"), dpi=500, height = 3, width = 10, units = "in")
     }
     draft <- ggplot(data = datum, 
                     aes(x = Position_num, y=number_hit,
@@ -129,7 +129,7 @@ graph_coverage_map <- function(file_name="genome_df.csv",
       theme(legend.position = "top")
     print(draft)
     if(save_them){
-      ggsave(paste0(prefix, "rel_deleted.png"), dpi=500)
+      ggsave(paste0(prefix, "rel_deleted.png"), dpi=500, height = 3, width = 10, units = "in")
     }
     draft <- ggplot(data = datum, 
                     aes(x = Position_num, y=number_hit,
@@ -143,7 +143,7 @@ graph_coverage_map <- function(file_name="genome_df.csv",
       theme(legend.position = "top")
     print(draft)
     if(save_them){
-      ggsave(paste0(prefix, "rel_inserted.png"), dpi=500)
+      ggsave(paste0(prefix, "rel_inserted.png"), dpi=500, height = 3, width = 10, units = "in")
     }
     
     draft <- ggplot(data = datum, 
@@ -158,7 +158,7 @@ graph_coverage_map <- function(file_name="genome_df.csv",
       theme(legend.position = "top")
     print(draft)
     if(save_them){
-      ggsave(paste0(prefix, "plume_mismatched.png"), dpi=500)
+      ggsave(paste0(prefix, "plume_mismatched.png"), dpi=500, height = 3, width = 10, units = "in")
     }
     draft <- ggplot(data = datum, 
                     aes(x = Position_num, y=number_hit,
@@ -172,7 +172,7 @@ graph_coverage_map <- function(file_name="genome_df.csv",
       theme(legend.position = "top")
     print(draft)
     if(save_them){
-      ggsave(paste0(prefix, "plume_deleted.png"), dpi=500)
+      ggsave(paste0(prefix, "plume_deleted.png"), dpi=500, height = 3, width = 10, units = "in")
     }
     draft <- ggplot(data = datum, 
                     aes(x = Position_num, y=number_hit,
@@ -186,8 +186,25 @@ graph_coverage_map <- function(file_name="genome_df.csv",
       theme(legend.position = "top")
     print(draft)
     if(save_them){
-      ggsave(paste0(prefix, "plume_inserted.png"), dpi=500)
+      ggsave(paste0(prefix, "plume_inserted.png"), dpi=500, height = 3, width = 10, units = "in")
     }
+    if ("ShannonDiversity" %in% names(datum)){
+      draft <- ggplot(data = datum, 
+                      aes(x = Position_num, y=ShannonDiversity,
+                          fill = number_hit,
+                          color = number_hit))+
+        geom_bar(stat = "identity")+
+        scale_fill_viridis_c(option="inferno")+
+        scale_color_viridis_c(option="inferno")+
+        theme_bw()+
+        labs(x = "Alignment Position", y = "Coverage")+
+        theme(legend.position = "top")
+      print(draft)
+      if(save_them){
+        ggsave(paste0(prefix, "ShannonDiversity.png"), dpi=500, height = 3, width = 10, units = "in")
+      }
+    }
+    
     if (graph_skew){
       datum$Position_num_2 <- as.character(datum$Position_num)
       draft <- ggplot(data = datum, 
@@ -204,7 +221,7 @@ graph_coverage_map <- function(file_name="genome_df.csv",
               axis.ticks.x = element_blank())
       print(draft)
       if(save_them){
-        ggsave(paste0(prefix, "coverage_binned.png"), dpi=500)
+        ggsave(paste0(prefix, "coverage_binned.png"), dpi=500, height = 3, width = 10, units = "in")
       }
       
       draft <- ggplot(data = datum, 
