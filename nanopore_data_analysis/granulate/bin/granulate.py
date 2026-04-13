@@ -3,6 +3,7 @@ import json
 import glob
 from random import sample
 import argparse
+import numpy
 
 # Set default values of necessary arguments
 genome_file = "CY1.fasta"
@@ -248,10 +249,6 @@ if runit:
                                     new_qseq+=""
                                 else:
                                     new_qseq+=qseq[k]
-                            # hseq = hit sequence with no inserts
-                            # gymn_seq = hit sequence WITH inserts
-                            # new_seq = query sequence with deletions but without inserts
-                            # qseq = query sequence with deletions and inserts
                             gymn_seq = hseq
                             hseq=hseq.replace("-", "")
                         try:
@@ -271,8 +268,6 @@ if runit:
                                             current_misses+=1
                                     except:
                                         pass
-                                        #print(new_qseq[k].upper())
-                                        #print(genome_dict[str((ticker*k)+h_from)][2])
                                     
 
                                 #Tracks insertions and inserted bases
@@ -283,21 +278,17 @@ if runit:
                                         genome_dict[str((ticker*k)+h_from)][6][qseq[k].upper()]+=1
                                     except:
                                         pass
-                                        #print(qseq[k].upper())
                                     insert_detected=True
                                     current_inserts+=1
                                     if ticker==1:
                                         gymn_seq=gymn_seq[1:len(gymn_seq)]
-                                        #qseq=qseq[1:len(qseq)]
                                     else:
                                         gymn_seq=gymn_seq[0:len(gymn_seq)-1]
                                         #qseq=qseq[0:len(qseq)-1]
                                 if ticker==1:
                                     gymn_seq=gymn_seq[1:len(gymn_seq)]
-                                    #qseq=qseq[1:len(qseq)]
                                 else:
                                     gymn_seq=gymn_seq[0:len(gymn_seq)-1]
-                                    #qseq=qseq[0:len(qseq)-1]
 
                                 #Tracks deletions
                                 # Detects the start of a new deletion
@@ -323,8 +314,6 @@ if runit:
                                                 genome_dict[str((ticker*k)+h_from)][3]+=1
                                                 current_misses+=1
                                         except:
-                                            #print(new_qseq[k].upper())
-                                            #print(genome_dict[str((ticker*k)+h_from)][2])
                                             pass
 
                                     if len(del_seq) >= del_threshold:
@@ -367,9 +356,30 @@ if runit:
         print("\n")
         print("Generating genome df...")
         with open(save_locale+prefixed+'genome_df.csv', 'w') as f:
-            f.write("Position_num,Position_nt,number_hit,Other_nt,number_mismatched,number_deleted,number_inserted,inserted_nt\n")
+            f.write("Position_num,Position_nt,number_hit,Other_nt,number_mismatched,number_deleted,number_inserted,inserted_nt,ShannonDiversity\n")
             for i in genome_dict:
-                tick=i+","+genome_dict[i][0]+","+str(genome_dict[i][1])+",G:"+str(genome_dict[i][2]["G"])+"_C:"+str(genome_dict[i][2]["C"])+"_A:"+str(genome_dict[i][2]["A"])+"_T:"+str(genome_dict[i][2]["T"])+"_U:"+str(genome_dict[i][2]["U"])+","+str(genome_dict[i][3])+","+str(genome_dict[i][4])+","+str(genome_dict[i][5])+",G:"+str(genome_dict[i][6]["G"])+"_C:"+str(genome_dict[i][6]["C"])+"_A:"+str(genome_dict[i][6]["A"])+"_T:"+str(genome_dict[i][6]["T"])+"_U:"+str(genome_dict[i][6]["U"])+"_E:"+str(genome_dict[i][6]["E"])+"\n"
+                shannonDiversity=0
+                pCount=genome_dict[i][1]
+                gCount=genome_dict[i][2]["G"]
+                cCount=genome_dict[i][2]["C"]
+                aCount=genome_dict[i][2]["A"]
+                uCount=genome_dict[i][2]["U"]
+                eCount=genome_dict[i][2]["E"]
+                tCount=genome_dict[i][2]["T"]
+                if gCount > 0:
+                    shannonDiversity+=float(-1*(gCount/pCount)*numpy.log(gCount/pCount))
+                if cCount > 0:
+                    shannonDiversity+=float(-1*(cCount/pCount)*numpy.log(cCount/pCount))
+                if aCount > 0:
+                    shannonDiversity+=float(-1*(aCount/pCount)*numpy.log(aCount/pCount))
+                if uCount > 0:
+                    shannonDiversity+=float(-1*(uCount/pCount)*numpy.log(uCount/pCount))
+                if tCount > 0:
+                    shannonDiversity+=float(-1*(tCount/pCount)*numpy.log(tCount/pCount))
+                if eCount > 0:
+                    shannonDiversity+=float(-1*(eCount/pCount)*numpy.log(eCount/pCount))
+
+                tick=i+","+genome_dict[i][0]+","+str(pCount)+",G:"+str(genome_dict[i][2]["G"])+"_C:"+str(genome_dict[i][2]["C"])+"_A:"+str(genome_dict[i][2]["A"])+"_T:"+str(genome_dict[i][2]["T"])+"_U:"+str(genome_dict[i][2]["U"])+","+str(genome_dict[i][3])+","+str(genome_dict[i][4])+","+str(genome_dict[i][5])+",G:"+str(genome_dict[i][6]["G"])+"_C:"+str(genome_dict[i][6]["C"])+"_A:"+str(genome_dict[i][6]["A"])+"_T:"+str(genome_dict[i][6]["T"])+"_U:"+str(genome_dict[i][6]["U"])+"_E:"+str(genome_dict[i][6]["E"])+","+str(round(shannonDiversity, 3))+"\n"
                 f.write(tick)
 
     else:
