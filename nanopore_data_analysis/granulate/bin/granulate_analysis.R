@@ -191,8 +191,8 @@ graph_coverage_map <- function(file_name="genome_df.csv",
     if ("ShannonDiversity" %in% names(datum)){
       draft <- ggplot(data = datum, 
                       aes(x = Position_num, y=ShannonDiversity,
-                          fill = number_hit,
-                          color = number_hit))+
+                          fill = ShannonDiversity,
+                          color = ShannonDiversity))+
         geom_bar(stat = "identity")+
         scale_fill_viridis_c(option="inferno")+
         scale_color_viridis_c(option="inferno")+
