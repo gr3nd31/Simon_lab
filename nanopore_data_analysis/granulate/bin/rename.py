@@ -14,6 +14,7 @@ def read_fasta(fastafile):
     number as keys and sequence code as values
     """
     sequences = {}
+    dupeIDs = []
     with open(fastafile, "r") as f:
         ls = f.read()
     ls.rstrip("\n")
@@ -28,11 +29,11 @@ def read_fasta(fastafile):
             if seqName not in sequences.keys():
                 sequences[seqName]=theSeq
             else:
-                print("Duplicate seqID found for: "+seqName[1:])
-    return sequences
+                dupeIDs.append(seqName[1:].split(" ")[0])
+    return sequences,dupeIDs
 
 try:
-    x=read_fasta(args.input)
+    x,duplicates=read_fasta(args.input)
 except:
     print("Unable to open reads file. Aborting.")
     runIt=False
@@ -43,10 +44,16 @@ else:
     outFile="new_"+args.input
 
 if runIt:
+    print("Generating fasta format file...")
     try:
         for i in x:
             outstring=i.split(" ")[0]+"\n"+x[i]+"\n"
             with open(outFile, "a") as f:
                 f.write(outstring)
+        if len(duplicates) > 0:
+            print("Duplicate IDs found ("+str(len(duplicates))+"). Saving to duplicates file.")
+            with open("duplicates.txt", "a") as f:
+                for d in duplicates:
+                    f.write(d+"\n")
     except:
         print("Unable to write file using "+outFile+" file name. Aborting")
