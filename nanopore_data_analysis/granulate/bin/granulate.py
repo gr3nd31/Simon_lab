@@ -1,6 +1,6 @@
 # imports packages
 import json
-import glob
+from datetime import datetime
 from random import sample
 import argparse
 import numpy
@@ -31,6 +31,7 @@ parser.add_argument("-t", "--tag", help = "Prefix tag for files")
 parser.add_argument("-r", "--reference", help = "Name to put in the 'reference' column of the reads_df.csv. Default is name of reference as it is presented in the json description.")
 parser.parse_args()
 print("\n")
+logFile="Run time:"+datetime.today().strftime('%Y-%m-%d %H:%M:%S'+"\n")
 
 # Read arguments from command line
 args = parser.parse_args()
@@ -46,20 +47,25 @@ if args.sampling:
         random_sample = True
         sampling_number = int(args.sampling)
         print("Randomly sampling number: % s" % args.sampling)
+        logFile+="Randomly sampling number: "+str(args.sampling)+"\n"
     except:
         random_sample = False
         print("Unable to read integer value for random sampling. Defaulting to the full dataset")
+        logFile+="Unable to read integer value for random sampling. Defaulting to the full dataset\n"
 # Sets the minimum number of bases to call something a deleted sequence
 if args.deletion_threshold:
     del_threshold = int(args.deletion_threshold)
     print("Minimum deletion length: % s" % args.deletion_threshold)
+    logFile+="Minimum deletion length: "+str(args.deletion_threshold)+"\n"
 # Sets a default evalue threshold
 if args.evalue_threshold:
     try:
         evalue_threshold = float(args.evalue_threshold)
         print("Maximum evalue threshold: % s" % args.evalue_threshold)
+        logFile+="Maximum evalue threshold: "+str(args.evalue_threshold)+"\n"
     except:
         print("Unable the read e-value threshold")
+        logFile+="Unable the read e-value threshold\n"
 # Sets output file location
 if args.output:
     if args.output.endswith("/"):
@@ -67,10 +73,12 @@ if args.output:
     else:
         save_locale = args.output+"/"
     print("Saving output files in: % s" % save_locale)
+    logFile+="Saving output files in: "+save_locale+"\n"
 # Adds a prefix to the file
 if args.tag:
     prefixed=args.tag
     print("Addding prefix of % s to files" % prefixed)
+    logFile+="Addding prefix of "+prefixed+" to files.\n"
 # Sets a reference name to specifically pull from the alignment
 if args.reference:
     target_title=args.reference
@@ -79,8 +87,10 @@ else:
 
 
 print("Comparing reads in "+locale+" with "+genome_file+"...\n")
+logFile+="Comparing reads in "+locale+" with "+genome_file+"...\n"
 if args.best_only:
     print("Only recording the first/best HSPS.\n")
+    logFile+="Only recording the first/best HSPS.\n"
     prefixed = "BestOnly_"+prefixed
 
 try:
@@ -104,6 +114,7 @@ try:
         start += 1
 except:
     print("Unable to open the genome file. Aborting.")
+    logFile+="Unable to open the genome file. Aborting.\n"
     runit=False
 
 #Creates headers for the output csv files
@@ -113,6 +124,7 @@ read_df="Number,read_id,reference,hsps,bit_score,evalue,coverage,q_strand,h_stra
 
 if runit:
     print("Parsing file: "+locale)
+    logFile+="Parsing file: "+locale
     # opens the alignment json file
     try:
         opened_file = open(locale, "r")
@@ -121,6 +133,7 @@ if runit:
         records= json.loads(json_file)
     except:
         print("Unable to open the alignment file. Aborting.")
+        logFile+="Unable to open the alignment file. Aborting.\n"
         runit=False
 
     # Initiates the aligned read, unaligned reads, and error counts
@@ -138,6 +151,7 @@ if runit:
             f.write(del_df)
     except:
         print("Unable to save files at given location. Aborting.")
+        logFile+="Unable to save files at given location. Aborting\n."
         runit=False
 
 if runit:
@@ -150,7 +164,9 @@ if runit:
         if random_sample:
             records=sample(records, sampling_number)
             print("Randomly sampling "+str(sampling_number)+" out of "+str(total_reads)+"...")
+            logFile+="Randomly sampling "+str(sampling_number)+" out of "+str(total_reads)+"...\n"
         print("Found a total of "+str(total_reads)+" reads in blast file")
+        logFile+="Found a total of "+str(total_reads)+" reads in blast file.\n"
 
         # Initiates a tracker to alert the user to the current analysis count
         spot_read=0
@@ -163,6 +179,7 @@ if runit:
                 # Alerts the user ever 10,000 reads
                 if spot_read%10000 == 0:
                     print("Analyzing read: "+str(spot_read))
+                    logFile+="Analyzing read: "+str(spot_read)+"\n"
                 #initiates an hsps number to record the number of hsps's per read
                 hsps_number=0
                 #Records the read name
@@ -330,9 +347,7 @@ if runit:
                                     genome_dict[str((ticker*k)+h_from)][6]["E"]+=1
                                     insert_detected = False
                         except:
-                            #print(the_step)
                             errors+=1
-                            #print(new_seq)
                         aligned_reads+=1
                     # Appends the read to the existing csv file
                     with open(save_locale+prefixed+'reads_df.csv', 'a') as f:
@@ -347,14 +362,17 @@ if runit:
                 pass
     except:
         print("Yeah, something went wrong")
+        logFile+="Yeah, something went wrong"
 
     # prints the number and percent of aligned reads
     print("Aligned reads: "+str(aligned_reads)+" ("+str(100*round(aligned_reads/total_reads,2))+"%)")
+    logFile+="Aligned reads: "+str(aligned_reads)+" ("+str(100*round(aligned_reads/total_reads,2))+"%)\n"
     # If aligned reads exist, the genome file is written
     if aligned_reads > 0:
-        print("Aligned read errors: "+str(errors)+" ("+str(100*round(errors/aligned_reads,2))+"%)")
-        print("\n")
+        print("Aligned read errors: "+str(errors)+" ("+str(100*round(errors/aligned_reads,2))+"%)\n")
+        logFile+="Aligned read errors: "+str(errors)+" ("+str(100*round(errors/aligned_reads,2))+"%)\n"
         print("Generating genome df...")
+        logFile+="Generating genome df...\n"
         with open(save_locale+prefixed+'genome_df.csv', 'w') as f:
             f.write("Position_num,Position_nt,number_hit,Other_nt,number_mismatched,number_deleted,number_inserted,inserted_nt,ShannonDiversity\n")
             for i in genome_dict:
@@ -367,26 +385,29 @@ if runit:
                 eCount=genome_dict[i][2]["E"]
                 tCount=genome_dict[i][2]["T"]
                 realCount = pCount-(gCount+cCount+aCount+uCount+eCount+tCount)
-
-                if gCount > 0:
-                    shannonDiversity+=float(-1*(gCount/pCount)*numpy.log(gCount/pCount))
-                if cCount > 0:
-                    shannonDiversity+=float(-1*(cCount/pCount)*numpy.log(cCount/pCount))
-                if aCount > 0:
-                    shannonDiversity+=float(-1*(aCount/pCount)*numpy.log(aCount/pCount))
-                if uCount > 0:
-                    shannonDiversity+=float(-1*(uCount/pCount)*numpy.log(uCount/pCount))
-                if tCount > 0:
-                    shannonDiversity+=float(-1*(tCount/pCount)*numpy.log(tCount/pCount))
-                if eCount > 0:
-                    shannonDiversity+=float(-1*(eCount/pCount)*numpy.log(eCount/pCount))
-                shannonDiversity+=float(-1*(realCount/pCount)*numpy.log(realCount/pCount))
+                if pCount>0:
+                    if gCount > 0:
+                        shannonDiversity+=float(-1*(gCount/pCount)*numpy.log(gCount/pCount))
+                    if cCount > 0:
+                        shannonDiversity+=float(-1*(cCount/pCount)*numpy.log(cCount/pCount))
+                    if aCount > 0:
+                        shannonDiversity+=float(-1*(aCount/pCount)*numpy.log(aCount/pCount))
+                    if uCount > 0:
+                        shannonDiversity+=float(-1*(uCount/pCount)*numpy.log(uCount/pCount))
+                    if tCount > 0:
+                        shannonDiversity+=float(-1*(tCount/pCount)*numpy.log(tCount/pCount))
+                    if eCount > 0:
+                        shannonDiversity+=float(-1*(eCount/pCount)*numpy.log(eCount/pCount))
+                    shannonDiversity+=float(-1*(realCount/pCount)*numpy.log(realCount/pCount))
 
                 tick=i+","+genome_dict[i][0]+","+str(pCount)+",G:"+str(genome_dict[i][2]["G"])+"_C:"+str(genome_dict[i][2]["C"])+"_A:"+str(genome_dict[i][2]["A"])+"_T:"+str(genome_dict[i][2]["T"])+"_U:"+str(genome_dict[i][2]["U"])+","+str(genome_dict[i][3])+","+str(genome_dict[i][4])+","+str(genome_dict[i][5])+",G:"+str(genome_dict[i][6]["G"])+"_C:"+str(genome_dict[i][6]["C"])+"_A:"+str(genome_dict[i][6]["A"])+"_T:"+str(genome_dict[i][6]["T"])+"_U:"+str(genome_dict[i][6]["U"])+"_E:"+str(genome_dict[i][6]["E"])+","+str(round(shannonDiversity, 3))+"\n"
                 f.write(tick)
 
     else:
-        print("No reads found :-(")
-        print("\n")
+        print("No reads found :-(\n")
+        logFile+="No reads found :-(\n"
 
     print("Granulation complete.\n")
+    logFile+="Granulation complete.\n"
+    with open('logFile.txt', 'w') as f:
+            f.write(logFile)
