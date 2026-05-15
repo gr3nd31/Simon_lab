@@ -10,7 +10,6 @@ parser.add_argument("-c", "--color", help = "Hex code for the fill color.", defa
 parser.add_argument("-o", "--output", help = "Name of the output file.") #
 parser.parse_args()
 args = parser.parse_args()
-lcounter = 0
 runIt=True
 
 if args.output:
@@ -73,8 +72,10 @@ def splitText(svg, pes, seq):
      return gin
 
 def addCircles(text, svg, color):
+     circs=""
      for i in text.keys():
-          svg+="<circle id=\\\"uuid-"+str(text[i][4])+"\\\" cx=\\\""+text[i][2]+"\\\" cy=\\\""+text[i][3]+"\\\" stroke-width=\\\"0\\\" r=\\\"6\\\" fill=\\\""+color+"\\\" fill-opacity=\\\""+text[i][1]+"\\\"></circle>"
+          circs+="<circle id=\\\"uuid-"+str(text[i][4])+"\\\" cx=\\\""+text[i][2]+"\\\" cy=\\\""+text[i][3]+"\\\" stroke-width=\\\"0\\\" r=\\\"6\\\" fill=\\\""+color+"\\\" fill-opacity=\\\""+text[i][1]+"\\\"></circle>"
+     svg=svg.split("<text ", 1)[0]+circs+"<text "+svg.split("<text ", 1)[1]
      return svg
 
 if runIt:
