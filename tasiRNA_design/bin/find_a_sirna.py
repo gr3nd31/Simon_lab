@@ -60,6 +60,7 @@ parser.add_argument("-G", "--exclude_G_stretches", help="If flagged, siRNA with 
 parser.add_argument("-C", "--exclude_C_stretches", help="If flagged, siRNA with 3 C's in a row are excluded.", default=False, action="store_true")
 parser.add_argument("-A", "--exclude_A_stretches", help="If flagged, siRNA with 3 A's in a row are excluded.", default=False, action="store_true")
 parser.add_argument("-U", "--exclude_U_stretches", help="If flagged, siRNA with 3 U's in a row are excluded.", default=False, action="store_true")
+parser.add_argument("-a", "--a_tail_length", help="Length of polyA tail to be added to the sequence.", default=0)
 parser.add_argument("-e", "--ends_with_au", help = "Whether or not the end/start of the siRNA MUST begin with A/U", default=False, action="store_true")
 parser.add_argument("-o", "--out", help="Name of output file", default="sirna.csv")
 parser.parse_args()
@@ -85,6 +86,17 @@ if args.Length_of_oligo:
         print("Unable to parse given. Is it an integer?")
         runIt=False
 
+if args.a_tail_length:
+    tail=""
+    try:
+        aLength=int(args.a_tail_length)
+        for i in range(0,aLength):
+            tail+="A"
+    except:
+        print("Unable to parse given tail length (must be an integer). Using a tail length of 0.")
+else:
+    tail=""
+
 # Names the output file
 if args.out:
     outFile = args.out
@@ -105,8 +117,11 @@ if runIt:
 
         print("Generating hairpins of sequence: "+i[1:])
         theSeq = fastas[i].upper().replace("T", "U")
+        theSeq_length=len(theSeq)
+        theSeq+=tail
         if args.Sense == "Minus":
             theSeq=revc(theSeq)
+            #theSeq_length=theSeq_length-len(tail)
 
         print("Folding...")
         fc = RNA.fold_compound(theSeq)
@@ -116,7 +131,7 @@ if runIt:
         counter=0
         s_count=0
         print("Generating siRNA...")
-        while counter+og_length < len(theSeq)+1:
+        while counter+og_length < theSeq_length+1:
             testSI=theSeq[counter:counter+og_length]
 
             if args.foldback_check:
@@ -157,7 +172,7 @@ if runIt:
                 #Stores the unpaired percent
                 data+=str(1-(round(structure[counter:counter+og_length].count(".")/og_length, 3)))+","
                 #Stores the position percent
-                data+=str((counter+1)/len(theSeq))+","
+                data+=str((counter+1)/theSeq_length)+","
                 #Stores the GC content
                 data+=str(round((testSI.count("G")+testSI.count("C"))/og_length, 3))+","
                 #Stores the APE
