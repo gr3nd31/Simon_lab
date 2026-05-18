@@ -25,7 +25,7 @@ def read_fasta(fastafile):
             for k in j[1:]:
                 theSeq+=k
             if seqName not in sequences.keys():
-                sequences[seqName]=theSeq
+                sequences[seqName]=theSeq.replace(" ", "")
             else:
                 print("Duplicate seqID found for: "+seqName[1:])
     return sequences
