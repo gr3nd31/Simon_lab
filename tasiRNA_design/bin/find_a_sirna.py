@@ -191,6 +191,8 @@ if runIt:
             print("Identified "+str(s_count)+" potential "+str(og_length)+"-base siRNA.\n")
 
     x=pd.read_csv(outFile)
+    x['APE']*=-1
     x=x.sort_values(by=['Name','percentPaired', 'APE', 'gcPercent','positionPercent'], ascending=True)
+    x['APE']*=-1
     x.to_csv(outFile, index=False)
     print("Potential siRNA generated and stored in "+outFile)
