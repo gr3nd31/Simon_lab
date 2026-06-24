@@ -79,10 +79,10 @@ if not exclude:
                 f.write(hit_reads)
 elif exclude:
     trick = np.array(x)
-    trick=">"+trick
+    trick=np.char.add(">",trick)
     theDiff = set(fastq_reads.keys())-set(trick)
     for i in theDiff:
-        hit_reads = ">"+i+"\n"
+        hit_reads = i+"\n"
         if i in fastq_reads.keys():
             hits+=1
             hit_reads+=fastq_reads[i]+"\n"
