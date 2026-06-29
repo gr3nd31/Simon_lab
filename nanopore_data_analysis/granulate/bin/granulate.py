@@ -1,7 +1,6 @@
 # imports packages
-import json
+import ijson
 from datetime import datetime
-from random import sample
 import argparse
 import numpy
 
@@ -10,8 +9,6 @@ genome_file = "CY1.fasta"
 del_threshold = 7
 locale="both.json"
 evalue_threshold=1
-random_sample=False
-sampling_number=2283
 save_locale="./"
 prefixed=""
 max_hsps=10
@@ -23,7 +20,6 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-g", "--genome", help = "Path to the reference file")
 parser.add_argument("-B", "--best_only", help= "Only records the HSPS with the highest score", action='store_true')
 parser.add_argument("-a", "--alignment", help = "Path to the alignment json file")
-parser.add_argument("-s", "--sampling", help = "Number of alignments to randomly sample")
 parser.add_argument("-d", "--deletion_threshold", help = "Minimum deletion size to be recorded. Default is 6")
 parser.add_argument("-e", "--evalue_threshold", help = "Minimum evalue score for alignments to be included. Default is 1.")
 parser.add_argument("-o", "--output", help = "Path to output. Default is current directory")
@@ -41,17 +37,7 @@ if args.genome:
 # Gets the aligment json file
 if args.alignment:
     locale = args.alignment
-#Sets random sampling to TRUE and pulls the number
-if args.sampling:
-    try:
-        random_sample = True
-        sampling_number = int(args.sampling)
-        print("Randomly sampling number: % s" % args.sampling)
-        logFile+="Randomly sampling number: "+str(args.sampling)+"\n"
-    except:
-        random_sample = False
-        print("Unable to read integer value for random sampling. Defaulting to the full dataset")
-        logFile+="Unable to read integer value for random sampling. Defaulting to the full dataset\n"
+
 # Sets the minimum number of bases to call something a deleted sequence
 if args.deletion_threshold:
     del_threshold = int(args.deletion_threshold)
@@ -123,14 +109,14 @@ ins_df="Number,read_id,orientation,sense,position,size,ins_seq\n"
 read_df="Number,read_id,reference,hsps,bit_score,evalue,coverage,q_strand,h_strand,orientation,read_length,length,h_start,h_end,q_start,q_end,skipped,deletion_num,mismatch_num,insert_num\n"
 
 if runit:
-    print("Parsing file: "+locale)
-    logFile+="Parsing file: "+locale
-    # opens the alignment json file
     try:
+        print("Parsing file: "+locale)
+        logFile+="Parsing file: "+locale+"\n"
+        # opens the alignment json file
+        #try:
         opened_file = open(locale, "r")
         json_file = opened_file.read()
         opened_file.close()
-        records= json.loads(json_file)
     except:
         print("Unable to open the alignment file. Aborting.")
         logFile+="Unable to open the alignment file. Aborting.\n"
@@ -155,23 +141,15 @@ if runit:
         runit=False
 
 if runit:
-    try:
-        # Accesses total alignments
-        records=records['BlastOutput2']
-        total_reads=len(records)
-        # Randomly samples reads, if random sampling is on.
-        # Note: If a large amount of reads DO NOT align to the reference genome, sampling may result in fewer reads than desired.
-        if random_sample:
-            records=sample(records, sampling_number)
-            print("Randomly sampling "+str(sampling_number)+" out of "+str(total_reads)+"...")
-            logFile+="Randomly sampling "+str(sampling_number)+" out of "+str(total_reads)+"...\n"
-        print("Found a total of "+str(total_reads)+" reads in blast file")
-        logFile+="Found a total of "+str(total_reads)+" reads in blast file.\n"
-
-        # Initiates a tracker to alert the user to the current analysis count
-        spot_read=0
-        #Iterates through the sample reads
-        for i in records:
+    #try:
+    # Initiates a tracker to alert the user to the current analysis count
+    spot_read=0
+    for m in json_file.split("BlastOutput2")[1:]:
+        m = '{\n"BlastOutput2'+m
+        if not m.endswith("}\n"):
+            m = m[:len(m)-3]
+        for i in ijson.items(m, 'BlastOutput2.item'):
+            #Iterates through the sample reads
             j=i["report"]["results"]["search"]
             try:
                 # Adds to the read counter
@@ -353,20 +331,18 @@ if runit:
                     with open(save_locale+prefixed+'reads_df.csv', 'a') as f:
                         f.write(str(spot_read)+","+read_id+","+target_title+","+str(hsps_number)+","+str(read_data["bit_score"])+","+str(read_data["evalue"])+","+str(100*(span/len(genome)))+","+q_strand+","+h_strand+","+direction+","+str(read_length)+","+str(read_data['align_len'])+","+str(h_from)+","+str(h_to)+","+str(q_from)+","+str(q_to)+","+skipit+","+str(current_dels)+","+str(current_misses)+","+str(current_inserts)+"\n")
                     max_insertion_length = 0
-                if random_sample and aligned_reads >= sampling_number:
-                    break
 
             #If no alignment is found, the script passes
             except:
                 unaligned_reads+=1
                 pass
-    except:
-        print("Yeah, something went wrong")
-        logFile+="Yeah, something went wrong"
+    #except:
+    #    print("Yeah, something went wrong")
+    #    logFile+="Yeah, something went wrong"
 
     # prints the number and percent of aligned reads
-    print("Aligned reads: "+str(aligned_reads)+" ("+str(100*round(aligned_reads/total_reads,2))+"%)")
-    logFile+="Aligned reads: "+str(aligned_reads)+" ("+str(100*round(aligned_reads/total_reads,2))+"%)\n"
+    print("Aligned reads: "+str(aligned_reads)+" ("+str(100*round(aligned_reads/spot_read,2))+"%)")
+    logFile+="Aligned reads: "+str(aligned_reads)+" ("+str(100*round(aligned_reads/spot_read,2))+"%)\n"
     # If aligned reads exist, the genome file is written
     if aligned_reads > 0:
         print("Aligned read errors: "+str(errors)+" ("+str(100*round(errors/aligned_reads,2))+"%)\n")
