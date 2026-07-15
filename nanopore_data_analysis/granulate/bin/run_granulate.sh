@@ -5,7 +5,7 @@ cat $1 | awk '{if(NR%4==1) {printf(">%s\n",substr($1,2));} else if(NR%4==2) prin
 # Removes potential extra read information sometimes present after fastq -> fasta conversion
 #python3 bin/rename.py -i OUTPUT.fasta -o renamed_reads.fasta
 # Removes the temporary output.fasta file
-rm OUTPUT.fasta
+#rm OUTPUT.fasta
 
 # Creates blast database in the 'reference' directory
 echo "Creating blast db..."
@@ -28,7 +28,23 @@ rm -r references/db.fasta*
 
 # Generates a list of reads that likely belong to each reference and saves them to reference-specific folders
 echo "Binning reads..."
-Rscript bin/refine.R
+if [ $2 == "fast" ]; then
+    echo "Using fast binning method..."
+    if [ ! -d "reads" ]; then
+        mkdir reads
+    fi
+    for i in $(ls references);
+    do
+        t=$(cat references/$i | head -n 1 | sed 's/>//g')
+        if [ ! -d "$t" ]; then
+            mkdir reads/$t
+        fi
+        cat db_aligned.tsv | awk '/'$t'/{print $1}' > ./reads/$t/$t'.txt'
+    done
+else
+    echo "Using slow binning method..."
+    Rscript bin/refine.R
+fi
 # deleted the initial alignment file
 rm db_aligned.tsv
 
