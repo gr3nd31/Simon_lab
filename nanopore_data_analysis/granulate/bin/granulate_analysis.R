@@ -431,7 +431,7 @@ graph_reads_map <- function(file_name = "reads_df.csv",
                          color = fragment_label), alpha=alph, linewidth = width)+
         ylab("Alignment length")+
         xlab("Genome")+
-        scale_color_viridis_d(option="turbo")+
+        scale_color_manual(values = c("red", "black", "blue"))+
         theme_bw()+
         theme(axis.text.y = element_blank(),
               axis.ticks.y = element_blank(),

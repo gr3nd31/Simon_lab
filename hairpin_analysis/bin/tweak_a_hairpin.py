@@ -226,12 +226,12 @@ def new_split(sequence, box, cons, codes):
             box_df.loc[box_df['position'] == starter+1, 'codonCons'] = "1"+a_list
             box_df.loc[box_df['position'] == starter+2, 'codonCons'] = "2"+a_list
             box_df.loc[box_df['position'] == starter+3, 'codonCons'] = "3"+a_list
-
+    
     for i in box:
         interim = box[i]
         if interim[0] == "P":
-            box_df.loc[box_df['position'] == interim[1], 'partner'] = i
-            box_df.loc[box_df['position'] == interim[2], 'partner'] = i
+            box_df.loc[box_df['position'] == interim[1], 'partner'] = str(i)
+            box_df.loc[box_df['position'] == interim[2], 'partner'] = str(i)
             if (interim[3] == "G" or interim[4] == "G") and (interim[3] == "C" or interim[4] == "C"):
                 box_df.loc[box_df['position'] == interim[1], 'paired'] = "GC"
                 box_df.loc[box_df['position'] == interim[2], 'paired'] = "GC"
@@ -250,11 +250,11 @@ def new_split(sequence, box, cons, codes):
         else:
             if len(interim[3]) > 0:
                 for j in range(0,len(interim[3])):
-                    box_df.loc[box_df['position'] == interim[1]+j, 'partner'] = i
+                    box_df.loc[box_df['position'] == interim[1]+j, 'partner'] = str(i)
                     box_df.loc[box_df['position'] == interim[1]+j, 'set'] = 1
             if len(interim[4])> 0:
                 for j in range(0,len(interim[4])):
-                    box_df.loc[box_df['position'] == interim[2]-j, 'partner'] = i
+                    box_df.loc[box_df['position'] == interim[2]-j, 'partner'] = str(i)
                     box_df.loc[box_df['position'] == interim[2]-j, 'set'] = 2
             
     return box_df
