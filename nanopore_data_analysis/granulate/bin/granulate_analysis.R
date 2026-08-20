@@ -269,8 +269,8 @@ graph_reads_map <- function(file_name = "reads_df.csv",
                          print_mers = F,
                          genome_size = 0,
                          min_set = 0.1,
-                         max_set = 0.85){
-  reanalyze <- T
+                         max_set = 0.85,
+                         reanalyze=F){
   run_it <- T
   
   # Read the file
@@ -304,10 +304,10 @@ graph_reads_map <- function(file_name = "reads_df.csv",
     }
   }
   
-  if (run_it & reanalyze){
+  if (run_it){
     lcounter <- 0
     # Skips aligned_length generation if already present
-    if (!"aligned_length" %in% names(datum)){
+    if (!"aligned_length" %in% names(datum) | reanalyze){
       if (pre_sub & subset_num > 0){
         print(paste0("Pre-subsetting to ", subset_num, " reads."))
         # Randomly samples reads
@@ -386,6 +386,10 @@ graph_reads_map <- function(file_name = "reads_df.csv",
       } else {
         write_csv(datum, file_name)
       }
+      subset_list <- sample(datum$read_id, subset_num)
+      datum <- datum[datum$read_id %in% subset_list,]
+      datum <- datum[order(-datum$aligned_length),]
+      datum$a_id <- ordered(-datum$aligned_length)
     } else {
       # Orders by negative length in case of graphing
       print("Aggregate aligment length detected. Skipping analysis.")
@@ -431,7 +435,9 @@ graph_reads_map <- function(file_name = "reads_df.csv",
                          color = fragment_label), alpha=alph, linewidth = width)+
         ylab("Alignment length")+
         xlab("Genome")+
-        scale_color_manual(values = c("red", "black", "blue"))+
+        #scale_color_manual(values = c("grey","black", "purple", "blue", "green", "orange", "red"))+
+        #scale_color_manual(values = c("red","orange", "green", "blue", "purple", "black", "grey"))+
+        scale_color_viridis_d()+
         theme_bw()+
         theme(axis.text.y = element_blank(),
               axis.ticks.y = element_blank(),
@@ -462,9 +468,9 @@ graph_reads_map <- function(file_name = "reads_df.csv",
     if (set_line !=0){
       draft <- draft+ geom_vline(xintercept = set_line, color = "red")
     }
-    print(draft)
+    print(draft+theme(legend.position = "top"))
     if (save_it){
-      ggsave(paste0(prefix, "stacks.png"), width = 8, height = 4, dpi = 500)
+      ggsave(paste0(prefix, "stacks.png"), width = 9.675, height = 3.5, dpi = 500)
     }
     if (make_widget){
       htmlwidgets::saveWidget(ggplotly(draft), paste0(prefix, "stacks.html"), selfcontained = T)
