@@ -1149,7 +1149,7 @@ fault_align <- function(shaped = "fault_lines.csv",
   write_csv(shape_data, paste0(shape_name, "_normalized_to_", prefix, ".csv"))
 }
 
-# This function takes the reads_df.csv file and returns the 'gaps' between HSPS's on the same reads
+# This function takes the reads_df.csv dataframe and returns the 'gaps' between HSPS's on the same reads
 get_junctions <- function(datum){
   for (i in unique(datum$read_id)){
     if (nrow(datum[datum$read_id ==i,]) > 1){
@@ -1170,7 +1170,8 @@ get_junctions <- function(datum){
       }
     }
   }
-  allJunctions$Gap <- allJunctions$gapEnd - allJunctions$gapStart -1
+  allJunctions$Gap <- allJunctions$gapEnd - allJunctions$gapStart
+  allJunctions$Gap <- allJunctions$Gap - (allJunctions$Gap/abs(allJunctions$Gap))
   return(allJunctions)
 }
 
