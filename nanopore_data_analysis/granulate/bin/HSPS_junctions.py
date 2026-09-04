@@ -22,7 +22,7 @@ def read_fasta(fastafile):
     for i in split_reads:
         j=i.split("\n")
         if j[0] != "":
-            seqName=j[0]
+            seqName=">"+j[0]
             theSeq=""
             for k in j[1:]:
                 theSeq+=k
@@ -47,7 +47,6 @@ except FileNotFoundError:
 try:
     junctions['Sequence'] = junctions.apply(lambda row: sequences[row['readId']][min([row['gapStart'], row['gapEnd']]):max([row['gapStart'], row['gapEnd']])-1], axis=1)
 except KeyError:
-    print("Error: Some read IDs in the junction CSV file are not found in the fasta file")
+    print("Error: readId not found in fasta file")
     exit(1)
-
 junctions.to_csv(args.out, index=False)

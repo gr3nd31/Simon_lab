@@ -63,6 +63,7 @@ do
                 if [ $t == $i ]; then
                     # The reference-specific reads are pulled from the main reads file
                     python3 ../../bin/pullbacks.py -l $(ls *txt) -r ../../renamed_reads.fasta
+                    #grep -A 1 -f $t.txt ../../renamed_reads.fasta > out_reads.fasta
                     # The appropriate reference file is pulled in and turned into a blast db
                     cp ../../references/$j ref.fasta
                     makeblastdb -in ref.fasta -dbtype nucl

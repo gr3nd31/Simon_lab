@@ -437,7 +437,7 @@ graph_reads_map <- function(file_name = "reads_df.csv",
         xlab("Genome")+
         #scale_color_manual(values = c("grey","black", "purple", "blue", "green", "orange", "red"))+
         #scale_color_manual(values = c("red","orange", "green", "blue", "purple", "black", "grey"))+
-        scale_color_viridis_d()+
+        scale_color_viridis_d(option="turbo")+
         theme_bw()+
         theme(axis.text.y = element_blank(),
               axis.ticks.y = element_blank(),
@@ -828,8 +828,12 @@ graph_northern <- function(fileName = "reads_df.csv",
       draft <- draft+
         geom_segment(aes(x=0.5, xend = 1.5, y=read_length, yend = read_length, color = h_strand), alpha = alph, linewidth = line_wd)+
         scale_color_manual(values = c("darkred", 'darkblue'))
+    } else if(color_by == "north_mer"){
+      draft <- draft+
+        geom_segment(aes(x=0.5, xend = 1.5, y=read_length, yend = read_length, color = north_mer), alpha = alph, linewidth = line_wd)+
+        scale_color_viridis_d(option = "turbo")
     } else {
-      print("Unable to color by given argument and defaulting to 'none'. Valid argumnets are 'start', 'end', 'sene', or 'hsps'.")
+      print("Unable to color by given argument and defaulting to 'none'. Valid argumnets are 'start', 'end', 'sense', or 'hsps'.")
       draft <- draft+
         geom_segment(aes(x=0.5, xend = 1.5, y=read_length, yend = read_length), alpha = alph, linewidth = line_wd)
     }
