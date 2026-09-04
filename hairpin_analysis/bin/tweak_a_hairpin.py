@@ -15,7 +15,7 @@ parser.add_argument("-a", "--max_APE", help="Maximum APE value (Default is 0.4)"
 parser.add_argument("-p", "--max_paired_length", help="Maximum length of perfectly paired RNA.", default=21)
 parser.add_argument("-c", "--coding", help="If hairpin has coding, gives the position at which a codon begins and attempts to only manipulate nucleotides that maintain coding.")
 parser.add_argument("-o", "--out", help="Name of output file (Default is 'data.csv')", default="data.csv")
-parser.add_argument("-u", "--uncertainty", help="Percent (0-1) of target delta G/Length sufficient for tweaking.", default=0.1)
+parser.add_argument("-u", "--uncertainty", help="Percent (0-1) of target delta G/Length sufficient for tweaking.", default=0.05)
 parser.add_argument("-F", "--Force_hairpin", help="If flagged, sequences always used as the 5' side of a generated hairpin.",  action='store_true')
 parser.add_argument("-C", "--ConserveSequence", help="If flagged, the input sequence cannot be mutated.")
 parser.add_argument("-S", "--Subset", help="List of positions that should be changed. Example format: 12,15,20-30,60-70")
