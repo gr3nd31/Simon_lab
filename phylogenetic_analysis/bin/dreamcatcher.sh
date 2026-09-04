@@ -12,7 +12,7 @@
 #$4 = Name of ORF to compare (MUST BE ANNOTATED IN THE DB FILE AS `ORFNAME[START:STOP],...`)
 #echo $4
 
-#$5 = translate
+#$5 = translate or fold (only used for nucleotide alignments)
 
 
 if [ "$2" == "nucl" ]; then
@@ -60,12 +60,18 @@ if [ "$2" == "nucl" ]; then
     if [ "$5" == "translate" ]; then
         echo "Converting nucleotides to amino acids..."
         python3 bin/nucl_to_aa.py -s sequences.fasta -t $4
-        translated=true
+    elif [ "$5" == "fold" ]; then
+        echo "Folding sequences..."
+        python3 bin/foldSeqs.py -s sequences.fasta -o sequences_folded.fasta
+        mv sequences_folded.fasta sequences.fasta
+    else
+        echo "Incorrect translation option given. Try again please."
+        run_it=false
     fi
 
     # Runs mafft alignment and removes the raw sequence file
     echo "Beginning alignment"
-    mafft --auto sequences.fasta > sequences_aligned.fasta
+    mafft.bat --auto sequences.fasta > sequences_aligned.fasta
 
     # Generates a phylogenetic tree
     echo "Generate relationships"
